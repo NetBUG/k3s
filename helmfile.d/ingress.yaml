@@ -48,17 +48,6 @@ releases:
           - "--global.checknewversion"
         persistence:
           enabled: true
-          storageClass: "longhorn-main"
-        deployment:
-          initContainers:
-            # The "volume-permissions" init container is required if you run into permission issues.
-            # Related issue: https://github.com/traefik/traefik/issues/6972
-            - name: volume-permissions
-              image: busybox:1.31.1
-              command: ["sh", "-c", "chmod -Rv 600 /data/*"]
-              volumeMounts:
-                - name: data
-                  mountPath: /data
         env:
           - name: CF_DNS_API_TOKEN
             valueFrom:
