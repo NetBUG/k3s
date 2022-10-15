@@ -1,0 +1,28 @@
+repositories:
+  - name: nextcloud
+    url: https://nextcloud.github.io/helm/
+
+releases:
+  # https://github.com/nextcloud/helm/tree/master/charts/nextcloud
+  - name: nextcloud
+    namespace: nextcloud
+    installed: true
+    chart: nextcloud/nextcloud
+    values:
+      - ingress:
+          enabled: true
+          annotations:
+            traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
+        persistence:
+          enabled: true
+          storageClass: local-path
+        nextcloud:
+          host: nextcloud.k8s.home.nb3.me
+          extraVolumes:
+            - name: mydir
+              hostPath:
+                path: /media/Magic
+                type: DirectoryOrCreate
+          extraVolumeMounts:
+            - name: mydir
+              mountPath: "/data"

@@ -12,6 +12,6 @@ releases:
       - ingress:
           enabled: true
           hosts:
-            - dashboard.k8s.home.lex.la
+            - dashboard.k8s.home.nb3.me
           annotations:
             traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
