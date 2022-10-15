@@ -4,7 +4,7 @@
 
 ## What is it
 
-Kubernetes cluster ready for use on RPis or any other arm64 systems
+Kubernetes cluster ready for my server
 
 ### Included
 
@@ -20,8 +20,8 @@ Kubernetes cluster ready for use on RPis or any other arm64 systems
 
 1. Exclude some ip's from your dhcp-pool. Put them to metallb config
 2. Add Traefik's IP to your DNS
-3. Change all DNSs in the repo. You can find it with `lex.la` substring
-4. Add DNS wildcard to your DNS-server (ex.: `*.k8s.home.lex.la`)
+3. Change all DNSs in the repo. You can find it with `nb3.me` substring
+4. Add DNS wildcard to your DNS-server (ex.: `*.k8s.home.nb3.me`)
 5. Install Ubuntu 20.04 to your system
 6. `sudo apt install wireguard`
 
@@ -38,7 +38,7 @@ On all hosts add `cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1` to 
 On 1st master:
 
 ```shell
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest INSTALL_K3S_EXEC="--disable traefik,local-storage,servicelb --cluster-domain k8s.home.lex.la --flannel-backend=wireguard --cluster-init" sh -
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest INSTALL_K3S_EXEC="--disable traefik,local-storage,servicelb --cluster-domain k8s.home.nb3.me --flannel-backend=wireguard --cluster-init" sh -
 # copy content to ~/.kube/config and change address
 cat /etc/rancher/k3s/k3s.yaml
 # copy token for slave
@@ -48,7 +48,7 @@ cat /var/lib/rancher/k3s/server/node-token
 On else master nodes:
 
 ```shell
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest K3S_TOKEN=TOKEN-FROM-MASTER INSTALL_K3S_EXEC="server --server https://master01:6443 --disable traefik,local-storage,servicelb --cluster-domain k8s.home.lex.la --flannel-backend=wireguard" sh -
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest K3S_TOKEN=TOKEN-FROM-MASTER INSTALL_K3S_EXEC="server --server https://master01:6443 --disable traefik,local-storage,servicelb --cluster-domain k8s.home.nb3.me --flannel-backend=wireguard" sh -
 ```
 
 On slave:
