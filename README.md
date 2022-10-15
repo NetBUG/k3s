@@ -25,6 +25,12 @@ Kubernetes cluster ready for my server
 5. Install Ubuntu 20.04 to your system
 6. `sudo apt install wireguard`
 
+### Setting up DNS wildcards at Mikrotik router
+
+1. Go to `IP -> DNS`
+2. Go to Static section
+3. Add new with `.*\.k8s\.home\.nb3\.me` value and pointing to the network selected (`192.168.5.200` for me)
+
 On your host:
 
 1. [Helm](https://helm.sh/docs/intro/install/)
