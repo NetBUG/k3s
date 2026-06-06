@@ -1,105 +1,66 @@
-# K8S cluster
+# netbug_k3s — Homelab Kubernetes (2026 rebuild)
 
-## Not stable yet!
+**Русская версия: [README.ru.md](README.ru.md)**
 
-## What is it
+A two-node K3s cluster on x86 mini-PCs in a home LAN, managed entirely through GitOps.
 
-Kubernetes cluster ready for my server
+## Stack
 
-### Included
+| Concern | Choice |
+|---|---|
+| Distribution | [K3s](https://k3s.io) — 1 server (embedded etcd) + 1 agent |
+| GitOps | [Flux CD](https://fluxcd.io) v2.8 — this repo is the source of truth |
+| Routing | Gateway API v1.5 + Traefik v3 (Flux-managed; k3s-bundled traefik disabled) |
+| LoadBalancer | MetalLB (L2) — stable VIP on the LAN |
+| Storage | Longhorn (replicated across nodes); large media via NFS (csi-driver-nfs) |
+| TLS | cert-manager, wildcard `*.nb3.me` via Cloudflare DNS-01 |
+| Public access | Cloudflare Tunnel (in-cluster cloudflared) — no open ports |
+| LAN access | Split-horizon DNS on Mikrotik → MetalLB VIP, same hostnames |
+| Secrets | SOPS + age, decrypted by Flux |
+| External DNS/tunnels | OpenTofu in the separate `nb3_tf` repo |
 
-* kubernetes-dashboard
-* longhorn
-* Metallb
-* Traefik
-* node-exporter
-* victoria-metrics
-* ...
+## Repository layout
 
-## Pre-requirement
-
-1. Exclude some ip's from your dhcp-pool. Put them to metallb config
-2. Add Traefik's IP to your DNS
-3. Change all DNSs in the repo. You can find it with `nb3.me` substring
-4. Add DNS wildcard to your DNS-server (ex.: `*.k8s.home.nb3.me`)
-5. Install Ubuntu 20.04 to your system
-6. `sudo apt install wireguard`
-
-### Setting up DNS wildcards at Mikrotik router
-
-1. Go to `IP -> DNS`
-2. Go to Static section
-3. Add new with `.*\.k8s\.home\.nb3\.me` value and pointing to the network selected (`192.168.5.200` for me)
-
-On your host:
-
-1. [Helm](https://helm.sh/docs/intro/install/)
-2. [Helm diff plugin](https://github.com/databus23/helm-diff#install)
-3. [helmfile](https://github.com/roboll/helmfile)
-
-## Install k3s
-
-On all hosts add `cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1` to `/boot/firmware/cmdline.txt`
-
-On 1st master:
-
-```shell
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest INSTALL_K3S_EXEC="--disable traefik,local-storage,servicelb --cluster-domain k8s.home.nb3.me --flannel-backend=wireguard --cluster-init" sh -
-# copy content to ~/.kube/config and change address
-cat /etc/rancher/k3s/k3s.yaml
-# copy token for slave
-cat /var/lib/rancher/k3s/server/node-token
+```
+clusters/homelab/     Flux entrypoint: flux-system + ordered Kustomizations
+infrastructure/
+  sources/            HelmRepositories
+  crds/               Gateway API CRDs
+  controllers/        metallb, traefik, cert-manager, longhorn, csi-driver-nfs, cloudflared
+  config/             shared Gateway, wildcard Certificate, media NFS PV
+apps/                 one directory per service (the "service module")
+cluster-setup/        k3s config.yaml for each node (applied manually at install)
+docs/en, docs/ru      numbered per-milestone guides
 ```
 
-On else master nodes:
+## The service module
 
-```shell
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest K3S_TOKEN=TOKEN-FROM-MASTER INSTALL_K3S_EXEC="server --server https://master01:6443 --disable traefik,local-storage,servicelb --cluster-domain k8s.home.nb3.me --flannel-backend=wireguard" sh -
-```
+Each app under `apps/<name>/` is self-contained:
 
-On slave:
+| File | Purpose |
+|---|---|
+| `ks.yaml` | Flux Kustomization (SOPS decryption, dependsOn infrastructure) |
+| `namespace.yaml` | dedicated namespace |
+| `helmrelease.yaml` | upstream chart, or [bjw-s app-template](https://bjw-s-labs.github.io/helm-charts/) |
+| `httproute.yaml` | `HTTPRoute` → shared Gateway, hostname `<app>.nb3.me` |
+| `pvc.yaml` | Longhorn PVC(s) for state |
+| `secret.sops.yaml` | app secrets (optional) |
 
-```shell
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest K3S_URL=https://master01:6443 K3S_TOKEN=TOKEN-FROM-MASTER sh -
-```
+Adding a new service:
+1. `cp -r` an existing app dir, adjust names/chart/hostname
+2. Add one line to `apps/kustomization.yaml`
+3. Add one entry to `k8s_services` in `nb3_tf/terraform.tfvars` → `tofu apply` (public DNS + tunnel route)
+4. Add a Mikrotik static DNS entry `<app>.nb3.me → <VIP>` (LAN path)
 
-## Install all charts
+## Guides
 
-```shell
-helmfile apply
-```
-
-## Dashboards
-
-### Kubernetes
-
-Enabled, but you need a token to enter
-
-```shell
-# Add account and role
-kubectl apply -f charts/kubernetes-dashboard/account.yaml
-# Extract token
-kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
-```
-
-### Traefik
-
-```shell
-# Add ingrees route
-kubectl apply -f charts/traefik-dashboard/ingressroute.yaml
-```
-
-### Longhorn
-
-Already enabled
-
-## Update k8s
-
-Use [system-upgrade-controller](https://github.com/rancher/system-upgrade-controller/)
-
-```shell
-# Only once, install upgrader
-kubectl apply -f charts/system-upgrade/system-upgrade.yaml
-# Apply update plan
-kubectl apply -f charts/system-upgrade/k3s-plans.yaml
-```
+| # | EN | RU |
+|---|---|---|
+| — | [Architecture](docs/architecture.md) | [Архитектура](docs/architecture.ru.md) |
+| 01 | [Cluster setup](docs/en/01-cluster-setup.md) | [Установка кластера](docs/ru/01-cluster-setup.md) |
+| 02 | [kubectl access](docs/en/02-kubectl-access.md) | [Доступ kubectl](docs/ru/02-kubectl-access.md) |
+| 03 | [GitOps & infrastructure](docs/en/03-gitops-infra.md) | [GitOps и инфраструктура](docs/ru/03-gitops-infra.md) |
+| 04 | [First workload: Paperless](docs/en/04-paperless.md) | [Первый сервис: Paperless](docs/ru/04-paperless.md) |
+| 05 | [Public access & split-horizon](docs/en/05-public-and-split-horizon.md) | [Публичный доступ и split-horizon](docs/ru/05-public-and-split-horizon.md) |
+| 06 | [Navidrome & media over NFS](docs/en/06-navidrome-media.md) | [Navidrome и медиа по NFS](docs/ru/06-navidrome-media.md) |
+| 07 | [Second node](docs/en/07-second-node.md) | [Второй узел](docs/ru/07-second-node.md) |

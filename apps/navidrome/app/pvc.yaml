@@ -1,0 +1,28 @@
+---
+# Navidrome state (DB, cache) — Longhorn, follows the pod between nodes.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: navidrome-data
+  namespace: navidrome
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 2Gi
+---
+# Music collection — read-only bind to the static NFS PV
+# (infrastructure/config/media-nfs-pv.yaml). NFS keeps the pod mobile:
+# it can run on either node and still reach the media node's export.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: music-ro
+  namespace: navidrome
+spec:
+  accessModes: [ReadOnlyMany]
+  storageClassName: "" # static binding, no provisioner
+  volumeName: media-music-ro
+  resources:
+    requests:
+      storage: 1Ti

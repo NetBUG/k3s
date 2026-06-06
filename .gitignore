@@ -1,1 +1,10 @@
-manifests/vk2tg/deployment-test.yaml
+# age private keys must never be committed
+*.agekey
+age.key
+
+# decrypted secrets (only *.sops.yaml is committed)
+*.secret.yaml
+*.dec.yaml
+
+# local scratch
+.DS_Store

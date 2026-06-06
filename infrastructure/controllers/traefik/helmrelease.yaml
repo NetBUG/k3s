@@ -1,0 +1,47 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: traefik
+      version: 40.2.0 # Traefik v3.7
+      sourceRef:
+        kind: HelmRepository
+        name: traefik
+        namespace: flux-system
+  values:
+    # Gateway API is the routing surface; Ingress/IngressRoute providers stay
+    # available but unused.
+    providers:
+      kubernetesGateway:
+        enabled: true
+    # The chart's own Gateway/GatewayClass objects are disabled — the shared
+    # Gateway is defined in infrastructure/config/gateway.yaml.
+    gateway:
+      enabled: false
+    gatewayClass:
+      enabled: true
+
+    service:
+      annotations:
+        # Stable LAN VIP — Mikrotik split-horizon DNS points *.nb3.me here.
+        # TODO: confirm VIP is outside the DHCP pool.
+        metallb.io/loadBalancerIPs: 192.168.5.200
+
+    # Redirect entrypoint-wide: every HTTP request goes to HTTPS.
+    ports:
+      web:
+        redirections:
+          entryPoint:
+            to: websecure
+            scheme: https
+            permanent: true
+
+    logs:
+      access:
+        enabled: true

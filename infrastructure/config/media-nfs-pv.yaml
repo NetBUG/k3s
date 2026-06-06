@@ -1,0 +1,26 @@
+---
+# Static PV for the large media collection (NFS export on the media node,
+# see docs/en/06-navidrome-media.md). NFS (not hostPath) keeps pods mobile:
+# any node can mount the share, so media workloads can move freely.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media-music-ro
+spec:
+  capacity:
+    storage: 1Ti # informational for static PVs
+  accessModes:
+    - ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "" # static binding only — PVCs must set volumeName
+  mountOptions:
+    - nfsvers=4.1
+    - ro
+  csi:
+    driver: nfs.csi.k8s.io
+    # volumeHandle must be unique per PV: server/share#suffix
+    # TODO: replace with the media node's static LAN IP
+    volumeHandle: 192.168.5.10/export/media/music#ro
+    volumeAttributes:
+      server: 192.168.5.10
+      share: /export/media/music
