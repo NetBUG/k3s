@@ -1,0 +1,29 @@
+# /etc/rancher/k3s/config.yaml — node1 (server / control-plane)
+# Install AFTER placing this file:  curl -sfL https://get.k3s.io | sh -
+#
+# Embedded etcd instead of SQLite: a future second *server* joins without
+# a datastore migration; single-node etcd cost is negligible on a NUC.
+cluster-init: true
+
+# Components replaced by Flux-managed equivalents:
+#   traefik       -> Traefik v3 HelmRelease (Gateway API provider)
+#   servicelb     -> MetalLB (stable VIP instead of node IPs)
+#   local-storage -> Longhorn (default StorageClass)
+disable:
+  - traefik
+  - servicelb
+  - local-storage
+
+write-kubeconfig-mode: "0644"
+
+# Default cluster.local kept (old custom cluster-domain dropped — public
+# hostnames are real *.nb3.me names on the Gateway, unrelated to cluster DNS).
+
+# vxlan on a trusted LAN; wireguard encryption is unnecessary overhead here.
+flannel-backend: vxlan
+
+tls-san:
+  # TODO: replace with node1's static LAN IP
+  - 192.168.5.10
+  # API hostname for remote kubectl over Cloudflare Tunnel (see docs/en/02)
+  - k3s.nb3.me

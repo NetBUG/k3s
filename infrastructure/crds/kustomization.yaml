@@ -1,0 +1,8 @@
+# Gateway API CRDs, Standard channel. Vendored from the upstream release —
+# update by re-downloading standard-install.yaml for the new tag:
+#   curl -sL -o gateway-api-standard-vX.Y.Z.yaml \
+#     https://github.com/kubernetes-sigs/gateway-api/releases/download/vX.Y.Z/standard-install.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - gateway-api-standard-v1.5.1.yaml

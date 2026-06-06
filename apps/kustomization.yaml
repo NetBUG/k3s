@@ -1,0 +1,7 @@
+# One line per service module — each ks.yaml is a Flux Kustomization that
+# reconciles the app's ./app directory independently.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - paperless/ks.yaml
+  - navidrome/ks.yaml

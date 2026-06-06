@@ -1,0 +1,90 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: paperless
+  namespace: paperless
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: app-template
+      version: 4.6.2
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  values:
+    controllers:
+      paperless:
+        containers:
+          app:
+            image:
+              repository: ghcr.io/paperless-ngx/paperless-ngx
+              tag: 2.20.15
+            env:
+              PAPERLESS_URL: https://paperless.nb3.me
+              PAPERLESS_TIME_ZONE: Europe/Moscow
+              PAPERLESS_REDIS: redis://paperless-redis.paperless.svc.cluster.local:6379
+              # SQLite on the Longhorn data volume — adequate for single-user lab use.
+            envFrom:
+              - secretRef:
+                  name: paperless-secret
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                memory: 2Gi
+
+      # Redis is only a task broker here — no persistence needed; queued
+      # OCR tasks are simply re-queued after a restart.
+      redis:
+        containers:
+          app:
+            image:
+              repository: docker.io/library/redis
+              tag: "8.8.0"
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+
+    service:
+      app:
+        controller: paperless
+        ports:
+          http:
+            port: 8000
+      redis:
+        controller: redis
+        ports:
+          redis:
+            port: 6379
+
+    persistence:
+      data:
+        existingClaim: paperless-data
+        advancedMounts:
+          paperless:
+            app:
+              - path: /usr/src/paperless/data
+      media:
+        existingClaim: paperless-media
+        advancedMounts:
+          paperless:
+            app:
+              - path: /usr/src/paperless/media
+      consume:
+        existingClaim: paperless-consume
+        advancedMounts:
+          paperless:
+            app:
+              - path: /usr/src/paperless/consume

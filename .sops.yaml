@@ -1,0 +1,9 @@
+# SOPS creation rules: encrypt only Secret data/stringData with the cluster age key.
+# Generate the key once:  age-keygen -o age.agekey   (keep it OUT of git!)
+# Put the public key (age1...) below, then:
+#   kubectl -n flux-system create secret generic sops-age --from-file=age.agekey=age.agekey
+creation_rules:
+  - path_regex: .*\.sops\.ya?ml$
+    encrypted_regex: ^(data|stringData)$
+    # TODO: replace with the real public key after `age-keygen`
+    age: age1REPLACE_ME_WITH_PUBLIC_KEY

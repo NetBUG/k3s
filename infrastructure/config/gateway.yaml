@@ -1,0 +1,30 @@
+---
+# The single shared Gateway. Every app attaches an HTTPRoute to the
+# `websecure` listener; HTTP->HTTPS redirect happens at the Traefik
+# entrypoint level (see traefik HelmRelease values).
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: homelab
+  namespace: traefik
+spec:
+  gatewayClassName: traefik
+  listeners:
+    - name: web
+      protocol: HTTP
+      port: 8000 # Traefik "web" entrypoint (service exposes it as :80)
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: websecure
+      protocol: HTTPS
+      port: 8443 # Traefik "websecure" entrypoint (service exposes it as :443)
+      hostname: "*.nb3.me"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: wildcard-nb3-me-tls
+      allowedRoutes:
+        namespaces:
+          from: All

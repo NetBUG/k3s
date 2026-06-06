@@ -1,0 +1,12 @@
+# 1. Create a Cloudflare token scoped to Zone:DNS:Edit for nb3.me only.
+# 2. Fill it in below, save as cf-api-token.sops.yaml
+# 3. sops -e -i cf-api-token.sops.yaml
+# 4. Uncomment the entry in infrastructure/config/kustomization.yaml
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api-token
+  namespace: cert-manager
+stringData:
+  api-token: "REPLACE_ME"

@@ -1,14 +1,26 @@
 {
-    "extends": [":pinDependencies"],
-    "major": {
-        "stabilityDays": 3
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":timezone(Europe/Moscow)",
+    ":pinDigests"
+  ],
+  "schedule": ["before 2am"],
+  "flux": {
+    "managerFilePatterns": ["/(^|/)(infrastructure|apps|clusters)/.+\\.ya?ml$/"]
+  },
+  "kubernetes": {
+    "managerFilePatterns": ["/(^|/)(infrastructure|apps)/.+\\.ya?ml$/"]
+  },
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "3 days",
+      "automerge": false
     },
-    "schedule": [
-        "before 2am"
-    ],
-    "dependencyDashboard": true,
-    "timezone": "Europe/Moscow",
-    "helmfile": {
-        "fileMatch": "(^|/)helmfile.d\/.*\\.yaml$"
+    {
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
     }
+  ]
 }
