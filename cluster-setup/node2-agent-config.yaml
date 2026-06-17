@@ -1,7 +1,7 @@
 # /etc/rancher/k3s/config.yaml — node2 (agent / worker)
 # Install AFTER placing this file:  curl -sfL https://get.k3s.io | sh -s - agent
 #
-# TODO: replace with node1's static LAN IP
-server: https://192.168.5.10:6443
+# node1 (server) on the libvirt LAN
+server: https://192.168.122.134:6443
 # Token from node1: sudo cat /var/lib/rancher/k3s/server/node-token
 token: "REPLACE_WITH_NODE_TOKEN"

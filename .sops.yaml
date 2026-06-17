@@ -5,5 +5,4 @@
 creation_rules:
   - path_regex: .*\.sops\.ya?ml$
     encrypted_regex: ^(data|stringData)$
-    # TODO: replace with the real public key after `age-keygen`
-    age: age1REPLACE_ME_WITH_PUBLIC_KEY
+    age: age10ar7n9wdlrjwmsjvdd3jpyda380crthvp804pvghvszj29lnxy6syyx6lt

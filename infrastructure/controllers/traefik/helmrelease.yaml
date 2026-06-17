@@ -29,9 +29,9 @@ spec:
 
     service:
       annotations:
-        # Stable LAN VIP — Mikrotik split-horizon DNS points *.nb3.me here.
-        # TODO: confirm VIP is outside the DHCP pool.
-        metallb.io/loadBalancerIPs: 192.168.5.200
+        # Stable LAN VIP — split-horizon DNS points *.nb3.me here.
+        # Must stay outside the libvirt DHCP range.
+        metallb.io/loadBalancerIPs: 192.168.122.200
 
     # Redirect entrypoint-wide: every HTTP request goes to HTTPS.
     ports:

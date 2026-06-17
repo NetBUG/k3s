@@ -5,5 +5,4 @@ resources:
   - pvc.yaml
   - helmrelease.yaml
   - httproute.yaml
-  # fill from secret.sops.yaml.example, encrypt, then uncomment:
-  # - secret.sops.yaml
+  - secret.sops.yaml

@@ -23,7 +23,8 @@ write-kubeconfig-mode: "0644"
 flannel-backend: vxlan
 
 tls-san:
-  # TODO: replace with node1's static LAN IP
-  - 192.168.5.10
+  # node1 on the libvirt LAN (192.168.122.0/24). DHCP-assigned today —
+  # reserve this lease (or set a netplan static) so the API cert SAN stays valid.
+  - 192.168.122.134
   # API hostname for remote kubectl over Cloudflare Tunnel (see docs/en/02)
   - k3s.nb3.me

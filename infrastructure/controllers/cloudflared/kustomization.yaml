@@ -8,5 +8,4 @@ resources:
   #   kubectl create secret generic tunnel-token -n cloudflared \
   #     --from-literal=TUNNEL_TOKEN=... --dry-run=client -o yaml > secret.sops.yaml
   #   sops -e -i secret.sops.yaml
-  # then uncomment:
-  # - secret.sops.yaml
+  - secret.sops.yaml

@@ -19,8 +19,9 @@ spec:
   csi:
     driver: nfs.csi.k8s.io
     # volumeHandle must be unique per PV: server/share#suffix
-    # TODO: replace with the media node's static LAN IP
-    volumeHandle: 192.168.5.10/export/media/music#ro
+    # TODO: point at the real media-node NFS export (none exists yet — navidrome
+    # is disabled in apps/kustomization.yaml until then). Placeholder = node1.
+    volumeHandle: 192.168.122.134/export/media/music#ro
     volumeAttributes:
-      server: 192.168.5.10
+      server: 192.168.122.134
       share: /export/media/music
