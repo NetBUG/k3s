@@ -1,0 +1,11 @@
+# Never commit state (contains the full domain definition + may leak host paths)
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
