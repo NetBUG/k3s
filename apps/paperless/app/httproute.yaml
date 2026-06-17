@@ -13,5 +13,6 @@ spec:
     - paperless.nb3.me
   rules:
     - backendRefs:
-        - name: paperless
+        # bjw-s app-template names the Service <release>-<serviceKey> = paperless-app
+        - name: paperless-app
           port: 8000
