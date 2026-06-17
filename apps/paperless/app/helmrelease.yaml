@@ -6,6 +6,15 @@ metadata:
   namespace: paperless
 spec:
   interval: 1h
+  # paperless-ngx first-boot (migrations + worker spin-up) is slow on a 2-core
+  # node; give the install room and let Flux remediate a timed-out install.
+  timeout: 15m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
   chart:
     spec:
       chart: app-template
@@ -35,6 +44,13 @@ spec:
                 enabled: true
               readiness:
                 enabled: true
+              # Hold liveness/readiness off until the server actually listens —
+              # otherwise the slow first boot trips liveness and crashloops.
+              startup:
+                enabled: true
+                spec:
+                  failureThreshold: 40
+                  periodSeconds: 10
             resources:
               requests:
                 cpu: 100m
