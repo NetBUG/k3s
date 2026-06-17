@@ -34,13 +34,15 @@ spec:
         metallb.io/loadBalancerIPs: 192.168.122.200
 
     # Redirect entrypoint-wide: every HTTP request goes to HTTPS.
+    # Chart 40.x nests redirections under ports.web.http (not ports.web).
     ports:
       web:
-        redirections:
-          entryPoint:
-            to: websecure
-            scheme: https
-            permanent: true
+        http:
+          redirections:
+            entryPoint:
+              to: websecure
+              scheme: https
+              permanent: true
 
     logs:
       access:
