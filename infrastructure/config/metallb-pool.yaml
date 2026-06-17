@@ -6,9 +6,11 @@ metadata:
   namespace: metallb-system
 spec:
   addresses:
-    # Traefik VIP — must be OUTSIDE the Mikrotik DHCP pool.
-    # TODO: confirm addressing against the current LAN layout.
-    - 192.168.5.200/32
+    # Traefik VIP on the libvirt LAN (192.168.122.0/24). In use: .1 (gw),
+    # .49, .134 (node1). .200 is free today — keep it OUT of the libvirt
+    # DHCP range (shrink the dnsmasq range on the host if needed) so it is
+    # never leased to another guest.
+    - 192.168.122.200/32
 ---
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
