@@ -6,6 +6,5 @@ resources:
   - gateway.yaml
   - gateway-certificate.yaml
   - media-nfs-pv.yaml
-  # Cloudflare API token for DNS-01 (fill from cf-api-token.sops.yaml.example,
-  # encrypt with sops, then uncomment):
-  # - cf-api-token.sops.yaml
+  # Cloudflare API token for DNS-01 (SOPS-encrypted).
+  - cf-api-token.sops.yaml
