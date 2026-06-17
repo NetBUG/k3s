@@ -6,6 +6,16 @@ metadata:
   namespace: longhorn-system
 spec:
   interval: 1h
+  # Longhorn pulls many images; on a slow/2-core node the default 5m install
+  # wait expires before all DaemonSet pods are up. Give it room and let Flux
+  # remediate a timed-out install instead of stalling.
+  timeout: 20m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
   chart:
     spec:
       chart: longhorn
