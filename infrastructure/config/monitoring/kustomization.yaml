@@ -1,0 +1,6 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - vmstaticscrape-baremetal.yaml
+  - grafana-httproute.yaml
+  - vmrule-hardware.yaml

@@ -1,0 +1,28 @@
+# Grafana admin credentials. Encrypt BEFORE committing:
+#   sops --encrypt --in-place infrastructure/controllers/monitoring/grafana-admin.sops.yaml
+# (.sops.yaml already targets *.sops.yaml and encrypts data/stringData with the
+# cluster age key; infra-controllers Kustomization decrypts it on apply.)
+apiVersion: v1
+kind: Secret
+metadata:
+    name: grafana-admin
+    namespace: monitoring
+type: Opaque
+stringData:
+    admin-user: ENC[AES256_GCM,data:pV34iHQ=,iv:E39N8TCggIhjIHD9TcV5wxflpTsUVavAriy1EdaIFTQ=,tag:/70vlI6hHSaT/Y9EbEYJyg==,type:str]
+    admin-password: ENC[AES256_GCM,data:ArFkOKlTIeTlv3Tx9yHjoSoytXM=,iv:iv0TnRe/hVV5dBhNUn8I+8jkcKHPQJzB+VvDZ6eQreg=,tag:WPNIb2UjoKnd4UtTZcEPNA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAvME1PN0xPQm9ma3RCK0x3
+            ZWlZNUFFblVkWm9zeEhIZERuWWg4ejFEbWpNClRPWjZ5VnlULzk3clNFNndGcWUz
+            b2pzdm45dGxhdWlKOTh6Y05HWU5PZmsKLS0tIG1uVmEzaEROaTZGY2RJRHU5UzNI
+            S250NVd1bFBOWVRIbXk5eVIyTmduNG8KG39U8REFYeEEe3Ne1lk41IJ0Je5Yki31
+            aJ/Rjc8mxM2klxgg47u5FCmW6IEJFYqzZtFtAbaRRhansHssFkAvOA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age10ar7n9wdlrjwmsjvdd3jpyda380crthvp804pvghvszj29lnxy6syyx6lt
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-06-25T11:26:57Z"
+    mac: ENC[AES256_GCM,data:ACidl2mbl98ZtHAnHE9n27ZQmmR8Mg32YdP/fiYBHpALtgfVdE4WAzbRFXLcXQnSMnnIh74/qos+M4HbOh2razZdeK/TR45BWwYbvqYPM588bxlHh44qg3fbJOdOFDSuGXHSM4Q8rjXvBHCKmUqeWN6iyfzj51dn759wbhNvlFs=,iv:rnCUiNXuMEL15bQKZKxyVgnFEXj7EpXR0P5+riFCYOw=,tag:8EW7HqplVq7z1wel/fhTsA==,type:str]
+    version: 3.13.1

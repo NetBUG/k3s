@@ -1,0 +1,21 @@
+---
+# LAN-only by design: this attaches to the shared Gateway, reachable via
+# split-horizon DNS (*.nb3.me -> MetalLB VIP). It is NOT exposed publicly
+# because no grafana.nb3.me ingress is added to the Cloudflare tunnel.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: homelab
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - grafana.nb3.me
+  rules:
+    - backendRefs:
+        # Grafana subchart Service = <release>-grafana, listening on port 80.
+        - name: vm-stack-grafana
+          port: 80

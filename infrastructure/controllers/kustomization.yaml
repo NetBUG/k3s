@@ -7,3 +7,4 @@ resources:
   - longhorn
   - csi-driver-nfs
   - cloudflared
+  - monitoring
