@@ -1,0 +1,31 @@
+---
+# Bare-metal node-exporter targets (not k8s nodes). These hosts expose REAL
+# hardware temperature — the in-cluster DaemonSet cannot (KVM guests don't see
+# host thermal sensors). vmagent picks this up via selectAllByDefault: true.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMStaticScrape
+metadata:
+  name: baremetal-hosts
+  namespace: monitoring
+spec:
+  jobName: baremetal-node
+  targetEndpoints:
+    - targets: ["192.168.0.237:9100"]
+      labels:
+        host: kvm-a
+        role: hypervisor
+        arch: amd64
+    - targets: ["192.168.0.162:9100"]
+      labels:
+        host: kvm-b
+        role: hypervisor
+        arch: amd64
+    - targets: ["192.168.0.69:9100"]
+      labels:
+        host: arm-board
+        role: sbc
+        arch: arm64
+    - targets: ["192.168.0.92:9100"]
+      labels:
+        host: nas
+        role: nas

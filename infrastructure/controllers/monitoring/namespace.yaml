@@ -1,0 +1,8 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    # node-exporter runs with hostPID/hostNetwork and host mounts.
+    pod-security.kubernetes.io/enforce: privileged

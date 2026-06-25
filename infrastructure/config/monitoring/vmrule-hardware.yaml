@@ -1,0 +1,46 @@
+---
+# Hardware alert rules. Loaded by vmalert (selectAllByDefault). Until a real
+# Alertmanager receiver is wired, these are visible in the vmalert/Grafana UI.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: hardware
+  namespace: monitoring
+spec:
+  groups:
+    - name: hardware
+      rules:
+        # x86 hosts expose temps via hwmon (coretemp/k10temp).
+        - alert: HighCpuTemperature
+          expr: max by (host, instance, chip) (node_hwmon_temp_celsius) > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High temperature on {{ $labels.host }}"
+            description: "{{ $labels.chip }} on {{ $labels.host }} is {{ $value | printf \"%.1f\" }}°C (>80°C for 5m)."
+        # ARM/SBC hosts expose temps via thermal_zone.
+        - alert: HighThermalZoneTemperature
+          expr: max by (host, instance, zone) (node_thermal_zone_temp) > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High thermal-zone temperature on {{ $labels.host }}"
+            description: "Zone {{ $labels.zone }} on {{ $labels.host }} is {{ $value | printf \"%.1f\" }}°C (>80°C for 5m)."
+        - alert: BaremetalNodeDown
+          expr: up{job="baremetal-node"} == 0
+          for: 3m
+          labels:
+            severity: critical
+          annotations:
+            summary: "node-exporter unreachable on {{ $labels.host }}"
+            description: "vmagent cannot scrape {{ $labels.instance }} ({{ $labels.host }}) for 3m."
+        - alert: HighMemoryUsage
+          expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 90
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High memory usage on {{ $labels.instance }}"
+            description: "Memory usage on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}% (>90% for 10m)."
