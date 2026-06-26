@@ -138,9 +138,12 @@ spec:
       resources:
         requests:
           cpu: 50m
-          memory: 128Mi
-        limits:
+          # Grafana with provisioned dashboards/datasources idles ~300-350Mi;
+          # the old 256Mi limit OOM-killed it (exit 137) in a restart loop,
+          # which is what made the UI slow/flaky to load.
           memory: 256Mi
+        limits:
+          memory: 512Mi
       # "Node Exporter Full" (temperature + CPU/RAM/disk/net per host).
       dashboardProviders:
         dashboardproviders.yaml:
