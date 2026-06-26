@@ -44,7 +44,11 @@ spec:
           storageClassName: longhorn
           resources:
             requests:
-              storage: 10Gi
+              # node1's disk is small (46 GiB) and Longhorn reserves ~30%, so
+              # headroom after paperless+grafana is ~7 GiB. VM is space-efficient;
+              # 4 GiB holds plenty of hardware/k8s metrics at 30d for this scale.
+              # Bump once node2 adds disk.
+              storage: 4Gi
         resources:
           requests:
             cpu: 100m
