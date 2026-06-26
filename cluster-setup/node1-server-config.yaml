@@ -22,9 +22,15 @@ write-kubeconfig-mode: "0644"
 # vxlan on a trusted LAN; wireguard encryption is unnecessary overhead here.
 flannel-backend: vxlan
 
+# Pin the node IP so etcd's member peer URL and kubelet InternalIP stay stable
+# across reboots (a DHCP/IP change breaks embedded etcd — see docs/en/01).
+node-ip: 192.168.122.135
+
 tls-san:
-  # node1 on the libvirt LAN (192.168.122.0/24). DHCP-assigned today —
-  # reserve this lease (or set a netplan static) so the API cert SAN stays valid.
+  # node1 on the libvirt LAN (192.168.122.0/24). Set a netplan static so the
+  # API cert SAN and etcd peer URL stay valid across reboots.
+  - 192.168.122.135
+  # .134 kept for backward-compat (older cert SAN / any stale references).
   - 192.168.122.134
   # API hostname for remote kubectl over Cloudflare Tunnel (see docs/en/02)
   - k3s.nb3.me
