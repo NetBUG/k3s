@@ -1,8 +1,11 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  # CoreDNS scaled to 2 (HA across nodes) — see coredns-ha.yaml.
-  - coredns-ha.yaml
+  # NOTE: CoreDNS HA (replicas=2) is set imperatively, NOT here — it's a
+  # k3s-managed addon and the bundled manifest omits `replicas`, so `kubectl
+  # scale deploy coredns -n kube-system --replicas=2` is durable (k3s won't
+  # revert a field it doesn't own). Flux can't patch a single field of an
+  # object it doesn't manage. See runs/ note.
   - metallb-pool.yaml
   - cluster-issuer.yaml
   - gateway.yaml
