@@ -1,0 +1,212 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: immich
+  namespace: immich
+spec:
+  interval: 1h
+  # First boot on a 4-core N3160 runs DB migrations + ML model load; give the
+  # install room and let Flux remediate a timed-out install instead of stalling.
+  timeout: 20m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: app-template
+      version: 4.6.2
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  values:
+    # Everything pinned to sowilo: the Postgres data dir, the photo library and
+    # the external read-only library all live on sowilo's disks via hostPath, so
+    # the pods must run there (terabytes are never copied — see runs/ note).
+    defaultPodOptions:
+      nodeSelector:
+        kubernetes.io/hostname: sowilo
+
+    controllers:
+      # --- Immich server (API + web + microservices, unified image) ----------
+      server:
+        containers:
+          app:
+            image:
+              repository: ghcr.io/immich-app/immich-server
+              # Pinned to the exact version that wrote the on-disk DB schema
+              # (Docker ran the floating :release = v1.132.1). The schema is
+              # version-coupled — do NOT let this float.
+              tag: v1.132.1
+            env:
+              DB_HOSTNAME: immich-postgres
+              DB_PORT: "5432"
+              DB_USERNAME: postgres
+              DB_DATABASE_NAME: immich
+              REDIS_HOSTNAME: immich-redis
+              REDIS_PORT: "6379"
+              IMMICH_MACHINE_LEARNING_URL: http://immich-machine-learning:3003
+              IMMICH_PORT: "2283"
+              TZ: Europe/Moscow
+            envFrom:
+              - secretRef:
+                  name: immich-secret
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+              # First boot (migrations) is slow on this CPU — hold liveness off
+              # until the API actually listens, or it crashloops mid-migration.
+              startup:
+                enabled: true
+                spec:
+                  failureThreshold: 40
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 200m
+                memory: 512Mi
+              limits:
+                memory: 3Gi
+
+      # --- Machine learning (smart search / face detection) ------------------
+      machine-learning:
+        containers:
+          app:
+            image:
+              repository: ghcr.io/immich-app/immich-machine-learning
+              tag: v1.132.1
+            env:
+              TZ: Europe/Moscow
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+              startup:
+                enabled: true
+                spec:
+                  failureThreshold: 40
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 200m
+                memory: 1Gi
+              limits:
+                memory: 4Gi
+
+      # --- Redis (job queue / cache) — no persistence needed -----------------
+      redis:
+        containers:
+          app:
+            image:
+              repository: docker.io/redis
+              tag: 6.2-alpine
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+
+      # --- Postgres 14 + pgvecto-rs (vector extension) -----------------------
+      # Reuses the EXISTING on-disk data dir (no dump/restore). Same image, same
+      # UID (999) as Docker. The custom args load vectors.so and set search_path
+      # exactly as the compose `command` did — without them Immich can't query
+      # embeddings. Only `args` is set so the image ENTRYPOINT (docker-entrypoint
+      # .sh, runs as root then drops to postgres) still initialises the cluster.
+      postgres:
+        containers:
+          app:
+            image:
+              repository: docker.io/tensorchord/pgvecto-rs
+              tag: pg14-v0.2.0
+            args:
+              - postgres
+              - -c
+              - shared_preload_libraries=vectors.so
+              - -c
+              - 'search_path="$user", public, vectors'
+              - -c
+              - logging_collector=on
+              - -c
+              - max_wal_size=2GB
+              - -c
+              - shared_buffers=512MB
+              - -c
+              - wal_compression=on
+            env:
+              POSTGRES_USER: postgres
+              POSTGRES_DB: immich
+              POSTGRES_INITDB_ARGS: --data-checksums
+            envFrom:
+              - secretRef:
+                  name: immich-secret
+            resources:
+              requests:
+                cpu: 100m
+                memory: 640Mi # must exceed shared_buffers=512MB
+              limits:
+                memory: 2Gi
+
+    service:
+      server:
+        controller: server
+        ports:
+          http:
+            port: 2283
+      machine-learning:
+        controller: machine-learning
+        ports:
+          http:
+            port: 3003
+      redis:
+        controller: redis
+        ports:
+          redis:
+            port: 6379
+      postgres:
+        controller: postgres
+        ports:
+          postgres:
+            port: 5432
+
+    persistence:
+      # Photo library (uploads). hostPath on sowilo's bulk HDD — terabytes stay
+      # in place; the pod is pinned here via nodeSelector above.
+      upload:
+        type: hostPath
+        hostPath: /media/Magic/netbug/Pictures/PhotoArc
+        advancedMounts:
+          server:
+            app:
+              - path: /usr/src/app/upload
+      # External read-only library (Sony imports synced in by syncthing).
+      extlib:
+        type: hostPath
+        hostPath: /media/Magic/netbug/syncthing/Photos_Sony
+        advancedMounts:
+          server:
+            app:
+              - path: /media/Sony5
+                readOnly: true
+      # Postgres data — the existing cluster dir (0700, owned by UID 999).
+      pgdata:
+        type: hostPath
+        hostPath: /media/data/immich/postgres
+        advancedMounts:
+          postgres:
+            app:
+              - path: /var/lib/postgresql/data
+      # ML model cache on Longhorn so models survive a pod restart (replicated).
+      model-cache:
+        existingClaim: immich-model-cache
+        advancedMounts:
+          machine-learning:
+            app:
+              - path: /cache
