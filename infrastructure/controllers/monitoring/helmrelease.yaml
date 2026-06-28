@@ -38,6 +38,10 @@ spec:
     vmsingle:
       spec:
         retentionPeriod: "30d"
+        # Pin to sowilo (15 GiB RAM) — node01 is a flaky 4 GiB guest and the
+        # query backend needs headroom. Its Longhorn data has a replica here.
+        nodeSelector:
+          kubernetes.io/hostname: sowilo
         storage:
           accessModes:
             - ReadWriteOnce
@@ -52,9 +56,12 @@ spec:
         resources:
           requests:
             cpu: 100m
-            memory: 256Mi
-          limits:
             memory: 512Mi
+          limits:
+            # 512Mi OOM-looped (exit 137) under the heavy "Node Exporter Full"
+            # dashboard's range queries, which 500'd Grafana. 2Gi gives the TSDB
+            # room to answer them (sowilo has 15 GiB).
+            memory: 2Gi
 
     # ---- Scraper ------------------------------------------------------------
     vmagent:
@@ -127,6 +134,10 @@ spec:
     # ---- Grafana ------------------------------------------------------------
     grafana:
       enabled: true
+      # Pin to sowilo (away from the flaky node01); its Longhorn PVC has a
+      # replica here so it stays put with its data.
+      nodeSelector:
+        kubernetes.io/hostname: sowilo
       admin:
         existingSecret: grafana-admin
         userKey: admin-user
