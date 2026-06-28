@@ -27,10 +27,10 @@ spec:
   values:
     persistence:
       defaultClass: true # the cluster's default StorageClass
-      # Single node until node2 joins (docs/en/07-second-node.md bumps this
-      # to 2 and migrates existing volumes).
-      defaultClassReplicaCount: 1
+      # sowilo joined as agent 2026-06-28 (docs/en/07). Two replicas now: every
+      # new volume gets a copy on each node so an app survives a node failure.
+      defaultClassReplicaCount: 2
     defaultSettings:
-      defaultReplicaCount: 1
-      # Don't schedule replicas on the same node twice once node2 exists.
+      defaultReplicaCount: 2
+      # Don't schedule both replicas on the same node — one per node only.
       replicaSoftAntiAffinity: false
