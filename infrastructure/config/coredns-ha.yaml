@@ -1,0 +1,14 @@
+---
+# CoreDNS is deployed by k3s (bundled addon), NOT Flux — but the bundled
+# manifest omits `replicas`, so k3s doesn't own that field and won't revert it.
+# We bump it to 2 here (server-side apply owns only `replicas`). The bundled
+# Deployment already carries a hostname topologySpreadConstraint with
+# whenUnsatisfiable: DoNotSchedule, so the second replica is forced onto the
+# other node — keeping cluster DNS alive when node01 flaps (see runs/ note).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coredns
+  namespace: kube-system
+spec:
+  replicas: 2
