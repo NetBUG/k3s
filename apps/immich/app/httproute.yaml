@@ -10,7 +10,7 @@ spec:
       namespace: traefik
       sectionName: websecure
   hostnames:
-    - immich.nb3.me
+    - photos.nb3.me
   rules:
     - backendRefs:
         # bjw-s app-template names the Service <release>-<serviceKey> = immich-server
