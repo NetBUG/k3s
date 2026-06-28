@@ -1,0 +1,14 @@
+---
+# ML model cache only. Photo library + Postgres data are hostPath on sowilo
+# (see helmrelease.yaml) — deliberately NOT on Longhorn (terabytes / reused
+# in place). This small cache is on Longhorn so models survive a restart.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-model-cache
+  namespace: immich
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
