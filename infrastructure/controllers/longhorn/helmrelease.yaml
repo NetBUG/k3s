@@ -34,9 +34,6 @@ spec:
       defaultReplicaCount: 2
       # Don't schedule both replicas on the same node — one per node only.
       replicaSoftAntiAffinity: false
-      # Off-site backups to Cloudflare R2 (S3-compatible). Creds + AWS_ENDPOINTS
-      # live in the SOPS secret backup-secret.sops.yaml; the bucket is in the URL.
-      # Region is a required placeholder R2 ignores. Set a RecurringJob per volume
-      # (or a group) in the Longhorn UI to schedule snapshots->backups.
-      backupTarget: s3://longhorn-backup@us-east-1/
-      backupTargetCredentialSecret: longhorn-r2-backup
+      # NOTE: backup target is NOT set here — in Longhorn 1.12 it lives in the
+      # BackupTarget CRD (backuptarget.yaml). defaultSettings.backupTarget only
+      # seeds a FRESH install and doesn't update the existing `default` CR.

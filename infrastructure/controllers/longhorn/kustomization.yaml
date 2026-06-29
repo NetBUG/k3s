@@ -4,3 +4,4 @@ resources:
   - namespace.yaml
   - backup-secret.sops.yaml
   - helmrelease.yaml
+  - backuptarget.yaml
