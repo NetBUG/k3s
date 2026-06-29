@@ -3,6 +3,11 @@
 > Milestone M1. Result: a single-node K3s cluster, ready for GitOps.
 > Hardware: x86 mini-PC (NUC), Ubuntu 24.04 LTS, static LAN IP.
 
+> **⚠️ Superseded by M9 (doc 09).** The control-plane later moved to **sowilo**
+> (server) and **node01 became an agent**; the `cluster-setup/` configs were renamed
+> (`node1-server-config.yaml` → `sowilo-server-config.yaml`, `node2-agent-config.yaml`
+> → `node01-agent-config.yaml`). This doc records the original build — read as history.
+
 ## 1. Prepare the node
 
 ```bash

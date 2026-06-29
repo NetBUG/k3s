@@ -3,6 +3,11 @@
 > Этап M1. Результат: однонодовый кластер K3s, готовый к GitOps.
 > Железо: x86 мини-ПК (NUC), Ubuntu 24.04 LTS, статический IP в LAN.
 
+> **⚠️ Заменено M9 (doc 09).** Позже control-plane переехал на **sowilo** (server),
+> а **node01 стал агентом**; конфиги в `cluster-setup/` переименованы
+> (`node1-server-config.yaml` → `sowilo-server-config.yaml`, `node2-agent-config.yaml`
+> → `node01-agent-config.yaml`). Документ описывает исходную сборку — читать как историю.
+
 ## 1. Подготовка узла
 
 ```bash
