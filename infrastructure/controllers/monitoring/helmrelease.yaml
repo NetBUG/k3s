@@ -66,6 +66,13 @@ spec:
     # ---- Scraper ------------------------------------------------------------
     vmagent:
       spec:
+        # Pin to sowilo: node01 lives on the flaky robothost hypervisor. If the
+        # scraper ran on node01 it would die at the same instant robothost
+        # crashes, losing the pre-crash temp/CPU samples. On sowilo it keeps
+        # scraping robothost (192.168.0.162) right up to the crash and survives
+        # the node01 outage so monitoring/alerting stay up.
+        nodeSelector:
+          kubernetes.io/hostname: sowilo
         # Pick up every VMServiceScrape / VMStaticScrape across namespaces
         # (incl. our bare-metal VMStaticScrape in the monitoring ns).
         selectAllByDefault: true
@@ -82,6 +89,9 @@ spec:
     vmalert:
       enabled: true
       spec:
+        # Pin to sowilo with the rest of the monitoring stack (survives node01 loss).
+        nodeSelector:
+          kubernetes.io/hostname: sowilo
         resources:
           requests:
             cpu: 25m
@@ -91,6 +101,9 @@ spec:
     alertmanager:
       enabled: true
       spec:
+        # Pin to sowilo so alerting fires even when node01 is down.
+        nodeSelector:
+          kubernetes.io/hostname: sowilo
         resources:
           requests:
             cpu: 25m
