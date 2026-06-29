@@ -1,0 +1,45 @@
+# /etc/rancher/k3s/config.yaml — sowilo (server / control-plane)
+# Install AFTER placing this file:
+#   curl -sfL https://get.k3s.io | sudo INSTALL_K3S_VERSION=v1.35.5+k3s1 sh -
+#
+# Post-M9 the control-plane moved here: sowilo is now the server (control-plane
+# + embedded etcd) on the LAN at 192.168.0.92 (Ubuntu 24.04, healthy disk).
+# node01 — formerly the server — is now a plain agent (libvirt guest on
+# robothost behind NAT, unreliable disk; currently cordoned + tainted-untrusted).
+# The CA was preserved through the snapshot-restore, so the cluster token is
+# unchanged across both nodes.
+#
+# Embedded etcd instead of SQLite: a future second *server* joins without
+# a datastore migration; single-node etcd cost is negligible.
+cluster-init: true
+
+# Components replaced by Flux-managed equivalents:
+#   traefik       -> Traefik v3 HelmRelease (Gateway API provider)
+#   servicelb     -> MetalLB (stable VIP instead of node IPs)
+#   local-storage -> Longhorn (default StorageClass)
+disable:
+  - traefik
+  - servicelb
+  - local-storage
+
+write-kubeconfig-mode: "0644"
+
+# Default cluster.local kept (old custom cluster-domain dropped — public
+# hostnames are real *.nb3.me names on the Gateway, unrelated to cluster DNS).
+
+# vxlan on a trusted LAN; wireguard encryption is unnecessary overhead here.
+flannel-backend: vxlan
+
+# Pin the node IP so etcd's member peer URL and kubelet InternalIP stay stable
+# across reboots (a DHCP/IP change breaks embedded etcd — see docs/en/01).
+node-ip: 192.168.0.92
+
+tls-san:
+  # sowilo's LAN IP — the new API address for remote kubectl/agents.
+  - 192.168.0.92
+  # API hostname for remote kubectl over Cloudflare Tunnel (see docs/en/02).
+  - k3s.nb3.me
+  # node01's libvirt-guest IP — kept in the SAN so the agent (and any tooling
+  # reaching the API via the libvirt route) sees a valid cert.
+  - 192.168.122.135
+  - 127.0.0.1

@@ -1,0 +1,35 @@
+# /etc/rancher/k3s/config.yaml — node01 (agent / worker)
+# Install AFTER placing this file:
+#   curl -sfL https://get.k3s.io | sudo INSTALL_K3S_VERSION=v1.35.5+k3s1 sh -s - agent
+#
+# Post-M9 roles inverted: sowilo is now the server (control-plane + etcd) on the
+# LAN at 192.168.0.92; node01 is now a plain agent. node01 is a libvirt guest on
+# nuc2/robothost (192.168.0.162), NAT network 192.168.122.0/24, and its qcow disk
+# sits on robothost's failing NVMe — so node01 is currently cordoned +
+# tainted-untrusted.
+#
+# Network plumbing is UNCHANGED from the pre-M9 setup (only the direction of who
+# talks to whom flips). The libvirt subnet is ROUTED through robothost (no DNAT):
+#   on robothost (192.168.0.162):
+#     iptables -I FORWARD 1 -s 192.168.0.0/24   -d 192.168.122.0/24 -j ACCEPT
+#     iptables -I FORWARD 1 -s 192.168.122.0/24 -d 192.168.0.0/24   -j ACCEPT
+#     iptables -t nat -I POSTROUTING 1 -s 192.168.122.0/24 -d 192.168.0.0/24 -j RETURN
+#   on sowilo:
+#     ip route add 192.168.122.0/24 via 192.168.0.162   (persist in netplan)
+#
+# Direction post-M9:
+#   - node01 (agent) -> sowilo:6443 leaves via node01's libvirt NAT egress.
+#   - sowilo -> node01 pods uses the libvirt route above.
+# With this, node01's flannel public IP (192.168.122.135) and sowilo's
+# (192.168.0.92) are mutually reachable with source preserved, so vxlan
+# (udp 8472) works both ways. The server's API cert SAN already lists
+# 192.168.122.135, so no server-side flannel/SAN changes are needed.
+server: https://192.168.0.92:6443
+
+# Cluster token (same on both; CA preserved through the snapshot-restore).
+# Otherwise: sudo cat /var/lib/rancher/k3s/server/node-token on sowilo.
+token: "K10b678995ebeb5aa403ef8eaa19af4cc4495b2ddad69479af4c153b9e55b301f29::server:387d67248245ea4e5ab5ab56759e6126"
+
+# Pin node IP to node01's libvirt-guest address so k3s/flannel advertise the
+# routable flannel public IP rather than auto-picking another interface.
+node-ip: 192.168.122.135

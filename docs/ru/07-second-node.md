@@ -3,6 +3,10 @@
 > Этап M7. Результат: 2 узла Ready, тома Longhorn с 2 здоровыми репликами,
 > приложения переживают drain узла node1.
 
+> **⚠️ Заменено M9 (doc 09).** Позже роли поменялись: **sowilo — server**,
+> **node01 — agent**. Упоминаемый ниже `node2-agent-config.yaml` переименован в
+> `node01-agent-config.yaml` (а `node1-server-config.yaml` → `sowilo-server-config.yaml`).
+
 ## 1. Подготовка и присоединение node2 (agent)
 
 ```bash

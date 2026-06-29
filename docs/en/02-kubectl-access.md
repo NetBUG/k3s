@@ -2,6 +2,10 @@
 
 > Milestone M2. Result: `kubectl` works from the workstation both on the LAN and away from home.
 
+> **⚠️ Post-M9 (doc 09):** the API server is now **sowilo `192.168.0.92`** (was
+> node01 `192.168.122.135`); the remote `k3s.nb3.me` tunnel path is unchanged
+> (Service-routed). The `cluster-setup/` configs were renamed — see doc 09.
+
 ## Local (LAN)
 
 ```bash

@@ -24,3 +24,31 @@ spec:
   # IPAddressPool / L2Advertisement live in infrastructure/config
   # (they need the MetalLB CRDs from this release to exist first).
   values: {}
+  # node01 (libvirt guest on robothost) sits on a failing NVMe that corrupts
+  # freshly-pulled image layers -> frr-k8s crashloops with "exec format error".
+  # node01 is cordoned + untrusted; keep the frr-k8s DaemonSet off it until the
+  # disk is replaced. (speaker stays — it runs fine and is harmless there.)
+  # Remove this block once robothost's NVMe is fixed and node01 is un-cordoned.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: DaemonSet
+              name: metallb-frr-k8s
+            patch: |
+              apiVersion: apps/v1
+              kind: DaemonSet
+              metadata:
+                name: metallb-frr-k8s
+              spec:
+                template:
+                  spec:
+                    affinity:
+                      nodeAffinity:
+                        requiredDuringSchedulingIgnoredDuringExecution:
+                          nodeSelectorTerms:
+                            - matchExpressions:
+                                - key: kubernetes.io/hostname
+                                  operator: NotIn
+                                  values:
+                                    - node01

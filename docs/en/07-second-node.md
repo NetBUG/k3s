@@ -3,6 +3,10 @@
 > Milestone M7. Result: 2 Ready nodes, Longhorn volumes at 2 healthy replicas,
 > apps survive a node1 drain.
 
+> **⚠️ Superseded by M9 (doc 09).** Roles later swapped: **sowilo is the server**,
+> **node01 the agent**. The `node2-agent-config.yaml` referenced below was renamed
+> `node01-agent-config.yaml` (and `node1-server-config.yaml` → `sowilo-server-config.yaml`).
+
 ## 1. Prepare and join node2 (agent)
 
 ```bash
