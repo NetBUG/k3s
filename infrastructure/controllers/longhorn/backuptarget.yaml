@@ -1,0 +1,15 @@
+---
+# Longhorn 1.12 keeps the backup target in this CRD (the `default` BackupTarget
+# is auto-created empty; Flux SSA fills in the URL + credential secret).
+# Off-site backups to Cloudflare R2 (S3-compatible); creds live in the SOPS
+# secret longhorn-r2-backup. Region in the URL is a placeholder R2 ignores.
+# Schedule snapshots->backups with a RecurringJob (Longhorn UI / CR).
+apiVersion: longhorn.io/v1beta2
+kind: BackupTarget
+metadata:
+  name: default
+  namespace: longhorn-system
+spec:
+  backupTargetURL: s3://longhorn-backup@us-east-1/
+  credentialSecret: longhorn-r2-backup
+  pollInterval: 5m0s
