@@ -52,11 +52,22 @@ spec:
               # vmsingle flipped to read-only (free 99.6 MB < the 100 MB default
               # -storage.minFreeDiskSpaceBytes), silently stopping ALL ingestion
               # while still answering historical queries. 156k series, ~46% of
-              # them apiserver/etcd histogram buckets (now dropped at scrape
-              # time, see vmagent.globalScrapeMetricRelabelConfigs below).
-              # 12Gi = room for 30d after that cut; Longhorn on sowilo had
-              # 26.4 GiB free. Longhorn expands online (allowVolumeExpansion).
-              storage: 12Gi
+              # them apiserver/etcd histogram buckets — now dropped at scrape
+              # time, see vmagent.globalScrapeMetricRelabelConfigs below.
+              #
+              # STILL 4Gi: 12Gi is rejected by Longhorn's admission webhook
+              # ("CheckReplicasSizeExpansion ... less than or equal to
+              # MinimalAvailable"). sowilo's Longhorn disk reports 26 GiB
+              # available against a 31 GiB floor (25% of 116 GiB) with 39 GiB
+              # already scheduled — mostly idle over-provisioning
+              # (paperless-media 20Gi at 0.5 GiB actual, immich-model-cache
+              # 10Gi at 0.2 GiB) — so ANY expansion is denied regardless of
+              # size. Leaving 12Gi here just fails the HelmRelease forever and
+              # wedges infra-controllers -> infra-config -> apps. Raise this
+              # only together with real capacity: shrink the idle volumes, lower
+              # the Longhorn disk's storageReserved/minimal-available floor, or
+              # give Longhorn a disk on sowilo's md0 array (2.5 TiB free).
+              storage: 4Gi
         resources:
           requests:
             cpu: 100m
