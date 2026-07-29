@@ -48,11 +48,15 @@ spec:
           storageClassName: longhorn
           resources:
             requests:
-              # node1's disk is small (46 GiB) and Longhorn reserves ~30%, so
-              # headroom after paperless+grafana is ~7 GiB. VM is space-efficient;
-              # 4 GiB holds plenty of hardware/k8s metrics at 30d for this scale.
-              # Bump once node2 adds disk.
-              storage: 4Gi
+              # 4Gi did NOT hold 30d: it filled in ~32 days (3.8/3.9 GiB) and
+              # vmsingle flipped to read-only (free 99.6 MB < the 100 MB default
+              # -storage.minFreeDiskSpaceBytes), silently stopping ALL ingestion
+              # while still answering historical queries. 156k series, ~46% of
+              # them apiserver/etcd histogram buckets (now dropped at scrape
+              # time, see vmagent.globalScrapeMetricRelabelConfigs below).
+              # 12Gi = room for 30d after that cut; Longhorn on sowilo had
+              # 26.4 GiB free. Longhorn expands online (allowVolumeExpansion).
+              storage: 12Gi
         resources:
           requests:
             cpu: 100m
@@ -76,6 +80,19 @@ spec:
         # Pick up every VMServiceScrape / VMStaticScrape across namespaces
         # (incl. our bare-metal VMStaticScrape in the monitoring ns).
         selectAllByDefault: true
+        # Drop apiserver/etcd histogram buckets before ingestion. They were
+        # ~72k of 156k series (apiserver_request_duration_seconds_bucket 23.4k,
+        # etcd_request_duration_seconds_bucket 19k, request_sli 9.4k,
+        # watch_list 6.7k, request_body_size 6k, watch_cache_read_wait 4.7k,
+        # watch_events_sizes 3.1k) — the reason a 4Gi TSDB filled in a month on
+        # a 2-node homelab. Cost: latency/SLO panels on the "Kubernetes / API
+        # server" + "etcd" dashboards and the cluster_quantile:* recording
+        # rules go empty. Hardware/node/pod metrics are untouched.
+        # Applied as metric_relabel_configs to every scrape job.
+        globalScrapeMetricRelabelConfigs:
+          - action: drop
+            source_labels: [__name__]
+            regex: "(apiserver|etcd)_.*_bucket"
         resources:
           requests:
             cpu: 50m
