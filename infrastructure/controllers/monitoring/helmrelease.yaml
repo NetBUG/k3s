@@ -55,19 +55,17 @@ spec:
               # them apiserver/etcd histogram buckets — now dropped at scrape
               # time, see vmagent.globalScrapeMetricRelabelConfigs below.
               #
-              # STILL 4Gi: 12Gi is rejected by Longhorn's admission webhook
-              # ("CheckReplicasSizeExpansion ... less than or equal to
-              # MinimalAvailable"). sowilo's Longhorn disk reports 26 GiB
-              # available against a 31 GiB floor (25% of 116 GiB) with 39 GiB
-              # already scheduled — mostly idle over-provisioning
-              # (paperless-media 20Gi at 0.5 GiB actual, immich-model-cache
-              # 10Gi at 0.2 GiB) — so ANY expansion is denied regardless of
-              # size. Leaving 12Gi here just fails the HelmRelease forever and
-              # wedges infra-controllers -> infra-config -> apps. Raise this
-              # only together with real capacity: shrink the idle volumes, lower
-              # the Longhorn disk's storageReserved/minimal-available floor, or
-              # give Longhorn a disk on sowilo's md0 array (2.5 TiB free).
-              storage: 4Gi
+              # 12Gi was first REJECTED by Longhorn's admission webhook
+              # ("CheckReplicasSizeExpansion ... CurrentAvailable is less than
+              # or equal to MinimalAvailable"): sowilo's root fs was 82% full,
+              # so its Longhorn disk sat at Schedulable=False/DiskPressure —
+              # below the 25% floor, which denies ANY expansion and any new
+              # replica. Root cause was NOT Longhorn: a runaway json-file log
+              # of the tgmusicbot Docker container (30.6 GiB in
+              # /var/lib/docker/containers, ~3.4 GiB/day, no rotation
+              # configured). Truncated -> 59.9 GiB free -> expansion allowed.
+              # Keep an eye on `df /` on sowilo before raising this again.
+              storage: 12Gi
         resources:
           requests:
             cpu: 100m
