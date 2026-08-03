@@ -15,9 +15,9 @@ spec:
         host: kvm-a
         role: hypervisor
         arch: amd64
-    - targets: ["192.168.0.162:9100"]
+    - targets: ["192.168.0.26:9100"]
       labels:
-        host: kvm-b
+        host: nuc2
         role: hypervisor
         arch: amd64
     - targets: ["192.168.0.69:9100"]
