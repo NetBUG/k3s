@@ -1,0 +1,37 @@
+---
+# Seafile's block store lives on sowilo's bulk array. The official Seafile
+# chart always creates its own PVC (`seafile-data`) and offers no way to swap
+# in a plain hostPath volume — setting `disablePVC: true` deletes the entire
+# `volumes:` block, extraVolumes included — so we meet it with a static PV.
+#
+# A `local` PV (not hostPath) is deliberate: its nodeAffinity plus the class's
+# WaitForFirstConsumer binding make the scheduler place the pod on sowilo by
+# itself, so the Seafile Deployment needs no nodeSelector of its own.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: seafile-local
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: seafile-users
+spec:
+  capacity:
+    storage: 1Ti # informational for static PVs; the array holds 2.5Ti free
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: seafile-local
+  local:
+    path: /media/Magic/seafile/users
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: [sowilo]

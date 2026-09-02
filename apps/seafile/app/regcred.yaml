@@ -1,0 +1,13 @@
+---
+# The Seafile chart hardcodes `imagePullSecrets: [regcred]` with no way to turn
+# it off. CE images are public, so pulls succeed either way — this empty secret
+# exists only to stop the kubelet emitting "secret regcred not found" events.
+# Nothing sensitive here; deliberately not SOPS-encrypted.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: regcred
+  namespace: seafile
+type: kubernetes.io/dockerconfigjson
+stringData:
+  .dockerconfigjson: '{"auths":{}}'

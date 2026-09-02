@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - regcred.yaml
+  - notification-inner-cm.yaml
+  - helmrelease-deps.yaml
+  - helmrelease-seafile.yaml
+  - httproute-notification.yaml
+  # Uncomment once secret.sops.yaml exists and is encrypted (see the .example).
+  - secret.sops.yaml

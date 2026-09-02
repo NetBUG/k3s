@@ -1,4 +1,4 @@
-# 03 — GitOps bootstrap & infrastructure layer
+`# 03 — GitOps bootstrap & infrastructure layer
 
 > Milestone M3. Result: Flux reconciles this repo; Gateway, wildcard cert,
 > VIP, Longhorn all green. See [architecture.md](../architecture.md) for the why.

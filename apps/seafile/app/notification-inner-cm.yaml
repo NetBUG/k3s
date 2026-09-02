@@ -1,0 +1,13 @@
+---
+# See the extraEnv note in helmrelease-seafile.yaml: the chart derives
+# INNER_NOTIFICATION_SERVER_URL from the public NOTIFICATION_SERVER_URL. This
+# ConfigMap is appended to envFrom after the chart's own, so it wins and the
+# server pushes events over the cluster network instead of hairpinning through
+# Cloudflare.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seafile-notification-inner
+  namespace: seafile
+data:
+  INNER_NOTIFICATION_SERVER_URL: http://seafile-deps-notification.seafile.svc.cluster.local:8083

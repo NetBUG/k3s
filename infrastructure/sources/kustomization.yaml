@@ -8,3 +8,4 @@ resources:
   - csi-driver-nfs.yaml
   - bjw-s.yaml
   - victoria-metrics.yaml
+  - seafile.yaml

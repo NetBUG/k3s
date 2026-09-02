@@ -64,3 +64,27 @@ docs/en, docs/ru      пронумерованные руководства по
 | 05 | [Public access & split-horizon](docs/en/05-public-and-split-horizon.md) | [Публичный доступ и split-horizon](docs/ru/05-public-and-split-horizon.md) |
 | 06 | [Navidrome & media over NFS](docs/en/06-navidrome-media.md) | [Navidrome и медиа по NFS](docs/ru/06-navidrome-media.md) |
 | 07 | [Second node](docs/en/07-second-node.md) | [Второй узел](docs/ru/07-second-node.md) |
+
+##  What was built
+
+**netbug_k3s** — full Flux GitOps monorepo:
+- `clusters/homelab/` — Flux entrypoint with the ordered chain infra-sources → infra-crds → infra-controllers → infra-config → apps
+- `infrastructure/` — MetalLB (VIP), Traefik v3.7 with Gateway API v1.5.1 (vendored Standard CRDs), cert-manager (prod DNS-01 wildcard `*.nb3.me`), Longhorn 1.12, csi-driver-nfs, cloudflared
+- `apps/paperless/` + `apps/navidrome/` — the service module pattern: one self-contained dir each (`ks.yaml` + namespace/HelmRelease/HTTPRoute/PVC/secret), both on bjw-s app-template 4.6.2; Navidrome mounts music read-only from the NFS static PV
+- `cluster-setup/` — modern config.yaml for both nodes (embedded etcd, traefik/servicelb/local-storage disabled, vxlan)
+- `docs/` — architecture + guides 01–07, all in EN and RU, matching your milestone list
+- `runs/20260606-1410-k3s-rebuild-2026.md` — session log
+
+Repo **nb3_tf**:  (new files only, `ssh_tunnels.tf` untouched): `k8s_services.tf` — one shared `k8s-homelab` tunnel, per-service ingress + proxied CNAMEs from the k8s_services map (paperless, navidrome, `k3s.nb3.me` TCP for remote kubectl), `k8s_tunnel_token` output for the in-cluster secret. Your concurrent single-token refactor is compatible — `tofu validate` still passes against it.
+
+*Verified during build*: all 7 kustomization dirs build with `kubectl kustomize`; all chart/image versions checked live (traefik 40.2.0, metallb 0.16.1, cert-manager 1.20.2, longhorn 1.12.0, cloudflared 2026.5.2, paperless 2.20.15, navidrome 0.61.2).
+
+**What needs attention** (in order)
+
+1. `cd ~/projects/nb3_tf && tofu plan` with your `TF_VAR_cloudflare_api_token` exported — I couldn't run it (tokens are env-only by design).
+**Check**: only creations, zero changes to ssh* resources.
+2. Fill placeholders: node IPs / VIP (`192.168.5.x` TODOs), age public key in `.sops.yaml`
+3. Then follow `docs/en/01…07` — node1 install through node2 join
+4. Push `rebuild-2026` when ready (I didn't push)
+
+Given the research depth this session (Gateway API channel status, tunnel token format, etcd-vs-SQLite tradeoff, NFS-vs-hostPath mobility analysis), it's a good moment to run /learn to capture the takeaways.

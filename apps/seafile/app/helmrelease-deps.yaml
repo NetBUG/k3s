@@ -1,0 +1,149 @@
+---
+# MariaDB + Redis + notification server. The official Seafile chart ships only
+# the Seafile Deployment itself and expects all three to exist already, so they
+# live here on app-template — same idiom as paperless/immich.
+#
+# Image tags and container env are taken verbatim from the upstream compose
+# (manual.seafile.com/13.0/repo/docker/ce/seafile-server.yml and
+# notification-server.yml), not guessed: upstream still pins MariaDB 10.11.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: seafile-deps
+  namespace: seafile
+spec:
+  interval: 1h
+  timeout: 10m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: app-template
+      version: 4.6.2
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  values:
+    # The DB datadir is a hostPath on sowilo's array, so everything here is
+    # pinned to that node. (Seafile itself is pinned by its local PV instead.)
+    defaultPodOptions:
+      nodeSelector:
+        kubernetes.io/hostname: sowilo
+
+    controllers:
+      mariadb:
+        containers:
+          app:
+            image:
+              repository: docker.io/library/mariadb
+              tag: "10.11"
+            env:
+              # One source of truth: the same secret key Seafile uses to create
+              # its databases on first boot. Drifting these apart breaks init.
+              MARIADB_ROOT_PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: seafile-secret
+                    key: INIT_SEAFILE_MYSQL_ROOT_PASSWORD
+              MYSQL_LOG_CONSOLE: "true"
+              MARIADB_AUTO_UPGRADE: "1"
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+
+      # Cache only. Upstream runs it with persistence explicitly off
+      # (--save "" --appendonly no); a restart costs nothing but a cold cache.
+      redis:
+        containers:
+          app:
+            image:
+              repository: docker.io/library/redis
+              tag: "8.8.0"
+            # args, not command — the image ENTRYPOINT must still run.
+            args:
+              - --requirepass
+              - $(REDIS_PASSWORD)
+              - --save
+              - ""
+              - --appendonly
+              - "no"
+            env:
+              REDIS_PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: seafile-secret
+                    key: REDIS_PASSWORD
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+
+      # Pushes live change events to connected clients over a WebSocket, so the
+      # desktop client reacts immediately instead of waiting for a poll cycle.
+      # Stateless: it reads the same DB and shares Seafile's JWT key.
+      notification:
+        containers:
+          app:
+            image:
+              repository: docker.io/seafileltd/notification-server
+              tag: 13.0-latest
+            env:
+              SEAFILE_MYSQL_DB_HOST: seafile-deps-mariadb.seafile.svc.cluster.local
+              SEAFILE_MYSQL_DB_PORT: "3306"
+              SEAFILE_MYSQL_DB_USER: seafile
+              SEAFILE_MYSQL_DB_CCNET_DB_NAME: ccnet_db
+              SEAFILE_MYSQL_DB_SEAFILE_DB_NAME: seafile_db
+              # Logs to stdout, so it needs no shared log volume of its own.
+              SEAFILE_LOG_TO_STDOUT: "true"
+              NOTIFICATION_SERVER_LOG_LEVEL: info
+            envFrom:
+              # Supplies SEAFILE_MYSQL_DB_PASSWORD and JWT_PRIVATE_KEY.
+              - secretRef:
+                  name: seafile-secret
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+
+    service:
+      mariadb:
+        controller: mariadb
+        ports:
+          mysql:
+            port: 3306
+      redis:
+        controller: redis
+        ports:
+          redis:
+            port: 6379
+      notification:
+        controller: notification
+        ports:
+          http:
+            port: 8083
+
+    persistence:
+      db:
+        type: hostPath
+        hostPath: /media/Magic/seafile/db
+        advancedMounts:
+          mariadb:
+            app:
+              - path: /var/lib/mysql

@@ -1,0 +1,11 @@
+---
+# Official Seafile chart repo (haiwen/seafile-helm-chart). Note the URL must
+# carry the /repo suffix — the index.yaml lives there, not at the root.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: seafile
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://haiwen.github.io/seafile-helm-chart/repo
