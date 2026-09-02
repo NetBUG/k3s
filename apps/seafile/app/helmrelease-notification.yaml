@@ -1,0 +1,72 @@
+---
+# Notification server — live change events pushed to clients over a WebSocket.
+#
+# Separate release on purpose. It authenticates to MySQL as the `seafile` user
+# and reads ccnet_db/seafile_db, both of which Seafile creates on ITS first
+# boot. Bundled with MariaDB/Redis it deadlocked: Seafile waited for that
+# release to report Ready while this pod crash-looped on "Access denied for
+# user 'seafile'", which could only be fixed by Seafile running first.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: seafile-notification
+  namespace: seafile
+spec:
+  interval: 1h
+  timeout: 10m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  dependsOn:
+    - name: seafile
+      namespace: seafile
+  chart:
+    spec:
+      chart: app-template
+      version: 4.6.2
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  values:
+    defaultPodOptions:
+      nodeSelector:
+        kubernetes.io/hostname: sowilo
+
+    controllers:
+      notification:
+        containers:
+          app:
+            image:
+              repository: docker.io/seafileltd/notification-server
+              tag: 13.0-latest
+            env:
+              SEAFILE_MYSQL_DB_HOST: seafile-deps-mariadb.seafile.svc.cluster.local
+              SEAFILE_MYSQL_DB_PORT: "3306"
+              SEAFILE_MYSQL_DB_USER: seafile
+              SEAFILE_MYSQL_DB_CCNET_DB_NAME: ccnet_db
+              SEAFILE_MYSQL_DB_SEAFILE_DB_NAME: seafile_db
+              # Logs to stdout, so no shared log volume is needed.
+              SEAFILE_LOG_TO_STDOUT: "true"
+              NOTIFICATION_SERVER_LOG_LEVEL: info
+            envFrom:
+              # Supplies SEAFILE_MYSQL_DB_PASSWORD and JWT_PRIVATE_KEY — the JWT
+              # key must match Seafile's or clients cannot authenticate here.
+              - secretRef:
+                  name: seafile-secret
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+
+    service:
+      app:
+        controller: notification
+        ports:
+          http:
+            port: 8083

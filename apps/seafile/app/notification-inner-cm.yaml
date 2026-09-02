@@ -10,4 +10,4 @@ metadata:
   name: seafile-notification-inner
   namespace: seafile
 data:
-  INNER_NOTIFICATION_SERVER_URL: http://seafile-deps-notification.seafile.svc.cluster.local:8083
+  INNER_NOTIFICATION_SERVER_URL: http://seafile-notification.seafile.svc.cluster.local:8083
