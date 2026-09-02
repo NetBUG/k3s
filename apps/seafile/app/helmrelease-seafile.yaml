@@ -1,0 +1,88 @@
+---
+# Seafile server (Seahub web UI + seaf-server), official haiwen chart.
+#
+# `seafile.env` is a MAP that overrides the chart's built-in `presetEnv` list
+# by name. Entries the chart declares without a default and without allowEmpty
+# make the render `fail` outright, so SEAFILE_SERVER_HOSTNAME and
+# SEAFILE_MYSQL_DB_HOST are mandatory here.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: seafile
+  namespace: seafile
+spec:
+  interval: 1h
+  # First boot creates the three databases and the admin account; that is slow
+  # on this box and must not be cut short.
+  timeout: 20m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  dependsOn:
+    - name: seafile-deps
+      namespace: seafile
+  chart:
+    spec:
+      chart: ce
+      version: 13.0.4
+      sourceRef:
+        kind: HelmRepository
+        name: seafile
+        namespace: flux-system
+  values:
+    seafile:
+      # STEP 7 of the rollout: once the first boot has created the DB schema and
+      # the admin user, flip this to false and drop INIT_SEAFILE_ADMIN_EMAIL
+      # below (upstream requires it). That is a deliberate second commit.
+      initMode: true
+
+      existingSecret:
+        name: seafile-secret
+
+      configs:
+        seafileDataVolume:
+          # Binds the static PV `seafile-users` (infrastructure/config/
+          # seafile-local-pv.yaml) → /media/Magic/seafile/users on sowilo.
+          # WaitForFirstConsumer + the PV's nodeAffinity place the pod there,
+          # so this Deployment needs no nodeSelector.
+          storageClassName: seafile-local
+          storage: 1Ti
+
+      env:
+        SEAFILE_SERVER_HOSTNAME: sync.nb3.me
+        SEAFILE_SERVER_PROTOCOL: https
+        TIME_ZONE: Europe/Moscow
+
+        SEAFILE_MYSQL_DB_HOST: seafile-deps-mariadb.seafile.svc.cluster.local
+        REDIS_HOST: seafile-deps-redis.seafile.svc.cluster.local
+
+        ENABLE_NOTIFICATION_SERVER: "true"
+        # PUBLIC url — this is what gets handed to desktop clients, so it must
+        # be reachable from their side, not a cluster-internal name.
+        NOTIFICATION_SERVER_URL: https://sync.nb3.me/notification
+
+        INIT_SEAFILE_ADMIN_EMAIL: oleg@lex.la
+
+      # The chart derives INNER_NOTIFICATION_SERVER_URL (the address the server
+      # itself pushes events to) from NOTIFICATION_SERVER_URL — collapsing two
+      # values upstream keeps separate. Left alone, Seafile would hairpin its
+      # own events out through Cloudflare and back. envFrom sources are applied
+      # in order and the last wins, and this ConfigMap is appended after the
+      # chart's own, so it puts the inner URL back on the cluster network.
+      extraEnv:
+        - configMapRef:
+            name: seafile-notification-inner
+
+    # Served by the shared Traefik Gateway; TLS is the existing *.nb3.me
+    # wildcard, so nothing here terminates HTTPS itself.
+    httpRoute:
+      enabled: true
+      parentRefs:
+        - name: homelab
+          namespace: traefik
+          sectionName: websecure
+      hostnames:
+        - sync.nb3.me

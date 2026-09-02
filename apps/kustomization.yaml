@@ -5,6 +5,7 @@ kind: Kustomization
 resources:
   - paperless/ks.yaml
   - immich/ks.yaml
+  - seafile/ks.yaml
   # navidrome needs the media NFS export (M6) which does not exist yet —
   # re-enable once a media node exports /export/media/music.
   # - navidrome/ks.yaml

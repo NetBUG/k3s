@@ -1,0 +1,37 @@
+---
+# The chart's own HTTPRoute claims `/` on sync.nb3.me; this one claims the
+# longer `/notification` prefix. Gateway API merges routes sharing a hostname
+# and resolves them by path specificity, not by file order, so no change to the
+# chart's route is needed.
+#
+# The rewrite is not optional. Upstream fronts this service with Caddy's
+# `handle_path "/notification*"`, which STRIPS the prefix before proxying — the
+# notification server expects `/ping`, not `/notification/ping`. Without the
+# filter below every request would 404.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: seafile-notification
+  namespace: seafile
+spec:
+  parentRefs:
+    - name: homelab
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - sync.nb3.me
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /notification
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        # app-template names services <release>-<serviceKey>
+        - name: seafile-deps-notification
+          port: 8083
