@@ -32,6 +32,7 @@ spec:
               type: ReplacePrefixMatch
               replacePrefixMatch: /
       backendRefs:
-        # app-template names services <release>-<serviceKey>
-        - name: seafile-deps-notification
+        # app-template drops the <serviceKey> suffix when a release defines a
+        # single service, so this is `seafile-notification`, not `...-app`.
+        - name: seafile-notification
           port: 8083

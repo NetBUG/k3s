@@ -1,7 +1,14 @@
 ---
-# MariaDB + Redis + notification server. The official Seafile chart ships only
-# the Seafile Deployment itself and expects all three to exist already, so they
-# live here on app-template — same idiom as paperless/immich.
+# MariaDB + Redis. The official Seafile chart ships only the Seafile Deployment
+# itself and expects both to exist already, so they live here on app-template —
+# same idiom as paperless/immich.
+#
+# The notification server is deliberately NOT here: it needs the `seafile` MySQL
+# user and the ccnet_db/seafile_db tables, which Seafile itself creates on first
+# boot. Keeping it in this release deadlocked the rollout — Seafile waits for
+# this release to go Ready, while the notification pod cannot start until
+# Seafile has run. It now lives in helmrelease-notification.yaml, behind
+# dependsOn: seafile.
 #
 # Image tags and container env are taken verbatim from the upstream compose
 # (manual.seafile.com/13.0/repo/docker/ce/seafile-server.yml and
@@ -93,35 +100,6 @@ spec:
               limits:
                 memory: 256Mi
 
-      # Pushes live change events to connected clients over a WebSocket, so the
-      # desktop client reacts immediately instead of waiting for a poll cycle.
-      # Stateless: it reads the same DB and shares Seafile's JWT key.
-      notification:
-        containers:
-          app:
-            image:
-              repository: docker.io/seafileltd/notification-server
-              tag: 13.0-latest
-            env:
-              SEAFILE_MYSQL_DB_HOST: seafile-deps-mariadb.seafile.svc.cluster.local
-              SEAFILE_MYSQL_DB_PORT: "3306"
-              SEAFILE_MYSQL_DB_USER: seafile
-              SEAFILE_MYSQL_DB_CCNET_DB_NAME: ccnet_db
-              SEAFILE_MYSQL_DB_SEAFILE_DB_NAME: seafile_db
-              # Logs to stdout, so it needs no shared log volume of its own.
-              SEAFILE_LOG_TO_STDOUT: "true"
-              NOTIFICATION_SERVER_LOG_LEVEL: info
-            envFrom:
-              # Supplies SEAFILE_MYSQL_DB_PASSWORD and JWT_PRIVATE_KEY.
-              - secretRef:
-                  name: seafile-secret
-            resources:
-              requests:
-                cpu: 10m
-                memory: 64Mi
-              limits:
-                memory: 256Mi
-
     service:
       mariadb:
         controller: mariadb
@@ -133,11 +111,6 @@ spec:
         ports:
           redis:
             port: 6379
-      notification:
-        controller: notification
-        ports:
-          http:
-            port: 8083
 
     persistence:
       db:
