@@ -6,6 +6,13 @@ metadata:
   namespace: navidrome
 spec:
   interval: 1h
+  timeout: 10m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
   chart:
     spec:
       chart: app-template
@@ -15,34 +22,85 @@ spec:
         name: bjw-s
         namespace: flux-system
   values:
+    # The music library is a hostPath on sowilo's RAID array — terabytes that
+    # are never copied anywhere — so the pod has to run on sowilo. node01 has
+    # no path to it. (NFS was the original plan; see docs/en/06 for why it
+    # lost: one node, one writer, and loopback NFS buys nothing here.)
+    defaultPodOptions:
+      nodeSelector:
+        kubernetes.io/hostname: sowilo
+      securityContext:
+        # Everything Navidrome touches on disk is owned 1000:1000 — both the
+        # music tree and the Docker-era data dir the Longhorn volume is seeded
+        # from. fsGroup is what makes the fresh Longhorn volume writable by
+        # that uid; it does nothing for the hostPath mount, which is read-only
+        # and already owned correctly.
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+
     controllers:
       navidrome:
         containers:
           app:
             image:
               repository: docker.io/deluan/navidrome
-              tag: 0.61.2
+              # Must be >= the version that wrote the seeded DB. `latest` on
+              # 2026-06-28 (the DB's last write) was 0.62.0, and Navidrome
+              # migrations are forward-only — an older binary refuses a newer
+              # schema. 0.63.2 is the last release with real soak time;
+              # 0.64.0 shipped 2026-09-12 and can wait a few weeks.
+              tag: "0.63.2"
             env:
               ND_MUSICFOLDER: /music
               ND_DATAFOLDER: /data
-              ND_BASEURL: https://navidrome.nb3.me
-              ND_SCANSCHEDULE: "@every 24h"
+              # No ND_BASEURL: that setting is a URL *path* for sub-path
+              # hosting (the Docker deployment sat at /navidrome behind
+              # nginx). Here the app owns the root of music.nb3.me.
+              # ND_SCANNER_SCHEDULE, not the ND_SCANSCHEDULE the Docker
+              # compose used: viper maps ND_<KEY> onto the config tree with
+              # "." -> "_", and the flat ScanSchedule option no longer exists
+              # in 0.6x, so the old name is read as an unknown key and
+              # silently ignored. Default is "0" = no periodic scan; the
+              # filesystem watcher (5s debounce) is on by default and catches
+              # most changes, this is the belt-and-braces sweep.
+              ND_SCANNER_SCHEDULE: "@every 1h"
+              # Navidrome's own consistent SQLite dump, written inside the
+              # Longhorn volume. The DB is the only irreplaceable state here
+              # (users, playlists, stars, play counts) and a volume snapshot
+              # of a live SQLite file is not guaranteed consistent.
+              ND_BACKUP_PATH: /data/backup
+              ND_BACKUP_SCHEDULE: "@daily"
+              ND_BACKUP_COUNT: "7"
+              ND_LOGLEVEL: info
+              ND_SESSIONTIMEOUT: 24h
+              TZ: Europe/Moscow
             probes:
               liveness:
                 enabled: true
               readiness:
                 enabled: true
+              # Migrating the seeded 40MB SQLite DB happens before the HTTP
+              # listener opens; hold liveness off until it answers.
+              startup:
+                enabled: true
+                spec:
+                  failureThreshold: 30
+                  periodSeconds: 5
             resources:
               requests:
                 cpu: 50m
                 memory: 256Mi
               limits:
-                memory: 1Gi
+                # Scanning is the memory peak, and the library only grows from
+                # empty. Idle sits near the 256Mi request.
+                memory: 2Gi
             securityContext:
-              runAsUser: 1000
-              runAsGroup: 1000
-              runAsNonRoot: true
               allowPrivilegeEscalation: false
+              capabilities:
+                drop: [ALL]
 
     service:
       app:
@@ -52,12 +110,20 @@ spec:
             port: 4533
 
     persistence:
+      # SQLite DB, user accounts, playlists, play counts, artwork cache — the
+      # only irreplaceable state here. Longhorn, not hostPath: the music can
+      # be re-scanned, the listening history cannot be rebuilt.
       data:
         existingClaim: navidrome-data
         globalMounts:
           - path: /data
+      # hostPathType: Directory makes a missing path a loud pod failure. With
+      # the type unset the kubelet silently creates a root-owned empty dir and
+      # Navidrome reports a healthy library of zero tracks.
       music:
-        existingClaim: music-ro
+        type: hostPath
+        hostPath: /media/Magic/netbug/Music/Library
+        hostPathType: Directory
         globalMounts:
           - path: /music
             readOnly: true

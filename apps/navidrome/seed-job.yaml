@@ -1,0 +1,55 @@
+---
+# One-shot seed of the Longhorn data volume from the Docker-era Navidrome
+# state on sowilo. Deliberately OUTSIDE ./app so Flux never reconciles it:
+# `kubectl apply -f` it by hand once, before enabling navidrome in
+# apps/kustomization.yaml, then delete it.
+#
+# Running it after the app is up would fail its own guard rather than clobber
+# a live DB — the copy refuses to run if /dst already holds a navidrome.db.
+#
+# See docs/en/06-navidrome-media.md for the full sequence.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: navidrome-seed
+  namespace: navidrome
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      # The source is a hostPath on sowilo; the Longhorn volume attaches
+      # wherever the pod lands, so the pod must land there.
+      nodeSelector:
+        kubernetes.io/hostname: sowilo
+      containers:
+        - name: copy
+          image: docker.io/library/busybox:1.37
+          # Runs as root on purpose: it has to chown the fresh volume to the
+          # uid Navidrome runs as. The pod is gone seconds later.
+          command:
+            - sh
+            - -euxc
+            - |
+              test -f /src/navidrome.db
+              if [ -f /dst/navidrome.db ]; then
+                echo "REFUSING: /dst already holds a navidrome.db" >&2
+                exit 1
+              fi
+              cp -a /src/. /dst/
+              chown -R 1000:1000 /dst
+              ls -la /dst
+          volumeMounts:
+            - name: src
+              mountPath: /src
+              readOnly: true
+            - name: dst
+              mountPath: /dst
+      volumes:
+        - name: src
+          hostPath:
+            path: /media/data/navidrome
+            type: Directory
+        - name: dst
+          persistentVolumeClaim:
+            claimName: navidrome-data

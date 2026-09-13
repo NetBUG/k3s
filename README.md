@@ -27,7 +27,7 @@ infrastructure/
   sources/            HelmRepositories
   crds/               Gateway API CRDs
   controllers/        metallb, traefik, cert-manager, longhorn, csi-driver-nfs, cloudflared
-  config/             shared Gateway, wildcard Certificate, media NFS PV
+  config/             shared Gateway, wildcard Certificate, seafile local PV
 apps/                 one directory per service (the "service module")
 cluster-setup/        k3s config.yaml for each node (applied manually at install)
 docs/en, docs/ru      numbered per-milestone guides

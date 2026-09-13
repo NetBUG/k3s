@@ -27,7 +27,7 @@ infrastructure/
   sources/            HelmRepositories
   crds/               CRD Gateway API
   controllers/        metallb, traefik, cert-manager, longhorn, csi-driver-nfs, cloudflared
-  config/             общий Gateway, wildcard-сертификат, NFS PV для медиа
+  config/             общий Gateway, wildcard-сертификат, локальный PV seafile
 apps/                 одна директория на сервис («модуль сервиса»)
 cluster-setup/        k3s config.yaml для каждого узла (применяется вручную при установке)
 docs/en, docs/ru      пронумерованные руководства по этапам

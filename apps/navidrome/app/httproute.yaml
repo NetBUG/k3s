@@ -9,8 +9,12 @@ spec:
     - name: homelab
       namespace: traefik
       sectionName: websecure
+  # music.nb3.me, not navidrome.nb3.me: the hostname predates the k3s
+  # migration (it fronted the nginx vhost on sowilo) and the clients know it.
+  # The matching Cloudflare CNAME + tunnel ingress rule live in nb3_tf
+  # (k8s_services.navidrome.hostname = "music").
   hostnames:
-    - navidrome.nb3.me
+    - music.nb3.me
   rules:
     - backendRefs:
         - name: navidrome

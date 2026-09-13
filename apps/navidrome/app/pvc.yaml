@@ -1,5 +1,16 @@
 ---
-# Navidrome state (DB, cache) — Longhorn, follows the pod between nodes.
+# Navidrome state: the SQLite DB (users, playlists, stars, play counts) plus
+# the artwork/transcode cache. 222MB today; 5Gi leaves room for cache growth.
+#
+# Longhorn rather than a hostPath under /media/data: the pod is already pinned
+# to sowilo by the music mount, so Longhorn buys no mobility — it buys
+# replication (a second copy on node01 once it is Ready again) and the ability
+# to push the volume to the R2 backup target. /media/data lives on the single
+# unmirrored sda2 SSD.
+#
+# Seeded once, before the app is enabled, from the Docker-era
+# /media/data/navidrome — see apps/navidrome/seed-job.yaml. That directory is
+# left untouched on disk as the rollback.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -9,20 +20,4 @@ spec:
   accessModes: [ReadWriteOnce]
   resources:
     requests:
-      storage: 2Gi
----
-# Music collection — read-only bind to the static NFS PV
-# (infrastructure/config/media-nfs-pv.yaml). NFS keeps the pod mobile:
-# it can run on either node and still reach the media node's export.
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: music-ro
-  namespace: navidrome
-spec:
-  accessModes: [ReadOnlyMany]
-  storageClassName: "" # static binding, no provisioner
-  volumeName: media-music-ro
-  resources:
-    requests:
-      storage: 1Ti
+      storage: 5Gi
