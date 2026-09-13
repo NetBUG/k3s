@@ -24,7 +24,7 @@
   │   ┌──────────────┐     ▼ HTTPRoute per app        │
   │   │ longhorn     │  paperless · navidrome · …     │
   │   │ replica #2   │     │            │             │
-  │   └──────────────┘  Longhorn PVC  NFS (media,RO)  │
+  │   └──────────────┘  Longhorn PVC  hostPath(media) │
   └───────────────────────────────────────────────────┘
 ```
 
@@ -50,7 +50,7 @@ git push ──► GitHub ──► Flux source-controller
   infra-sources ─► infra-crds ─► infra-controllers ─► infra-config ─► apps
   (HelmRepos)    (Gateway API)  (metallb,traefik,    (Gateway, cert,  (one Flux
                                 cert-manager,        MetalLB pool,    Kustomization
-                                longhorn, nfs-csi,   media NFS PV)    per app)
+                                longhorn, nfs-csi,   seafile PV)     per app)
                                 cloudflared)
 ```
 
@@ -63,7 +63,8 @@ A workload moves between nodes without losing access because every layer is
 node-independent:
 
 1. **State** — Longhorn replicates volumes to both nodes; on reschedule the
-   volume attaches wherever the pod lands. Media is NFS — mountable from any node.
+   volume attaches wherever the pod lands. Bulk media is the exception: it is a
+   hostPath on sowilo's array, so those pods carry a nodeSelector and stay put.
 2. **Routing** — HTTPRoute → Service → pod IP; Traefik follows endpoints automatically.
 3. **LAN entry** — MetalLB VIP fails over between nodes (L2 announcement moves).
 4. **Public entry** — cloudflared dials *out* from whichever node its pod runs on;
@@ -76,7 +77,7 @@ node-independent:
 | this repo | everything inside the cluster |
 | `nb3_tf` (OpenTofu) | Cloudflare: tunnel, per-service CNAMEs, zone settings |
 | Mikrotik | DHCP reservations, split-horizon static DNS entries |
-| node disks | `/etc/rancher/k3s/config.yaml` (copies in `cluster-setup/`), NFS export |
+| node disks | `/etc/rancher/k3s/config.yaml` (copies in `cluster-setup/`), the media trees under `/media` on sowilo |
 
 ## Component inventory
 
@@ -89,7 +90,7 @@ node-independent:
 | MetalLB | 0.16.1 | L2 VIP for LAN entry |
 | cert-manager | 1.20.2 | wildcard `*.nb3.me` via Cloudflare DNS-01 |
 | Longhorn | 1.12.0 | replicated storage; default StorageClass |
-| csi-driver-nfs | 4.13.2 | mounts the media NFS export |
+| csi-driver-nfs | 4.13.2 | installed, currently unused — the media NFS PV was dropped for hostPath (see [06](en/06-navidrome-media.md)) |
 | cloudflared | 2026.5.2 | outbound tunnel for public access |
 | bjw-s app-template | 4.6.2 | the Helm chart behind each service module |
 

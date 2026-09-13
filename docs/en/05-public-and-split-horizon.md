@@ -47,7 +47,7 @@ should show 4 edge connections registered.
 
 ```
 /ip dns static add name=paperless.nb3.me address=192.168.5.200 comment="k8s VIP"
-/ip dns static add name=navidrome.nb3.me address=192.168.5.200 comment="k8s VIP"
+/ip dns static add name=music.nb3.me address=192.168.5.200 comment="k8s VIP"
 ```
 
 (One entry per service; a regexp wildcard `.*\\.nb3\\.me` would also catch

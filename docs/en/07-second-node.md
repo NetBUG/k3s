@@ -66,15 +66,14 @@ backup target (S3-compatible — Cloudflare R2 works) in the Longhorn settings.
 kubectl drain node1 --ignore-daemonsets --delete-emptydir-data
 kubectl get pods -A -o wide               # everything lands on node2
 curl -v https://paperless.nb3.me          # both paths still serve
-curl -v https://navidrome.nb3.me
 kubectl uncordon node1
 ```
 
 What makes this work (see [architecture.md](../architecture.md)):
 Longhorn volume reattaches on node2 (replica already there) · MetalLB moves the
-L2 VIP announcement · cloudflared's second replica keeps the tunnel up · NFS
-mounts from any node.
+L2 VIP announcement · cloudflared's second replica keeps the tunnel up.
 
-Caveat: if node1 is also the media node, NFS-backed apps (Navidrome) lose
-media during the drain window — state on Longhorn stays intact. That's
-expected: the media disk is the one deliberate single-point.
+Caveat: this test only covers the Longhorn-backed apps. Navidrome and Immich
+mount bulk media as hostPath on sowilo and are pinned there by nodeSelector —
+they do not move, by design (see [06](06-navidrome-media.md)). The media disk
+is the one deliberate single point of failure.

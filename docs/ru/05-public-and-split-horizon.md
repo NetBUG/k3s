@@ -47,7 +47,7 @@ cloudflared подключается наружу; проверка: `kubectl -n
 
 ```
 /ip dns static add name=paperless.nb3.me address=192.168.5.200 comment="k8s VIP"
-/ip dns static add name=navidrome.nb3.me address=192.168.5.200 comment="k8s VIP"
+/ip dns static add name=music.nb3.me address=192.168.5.200 comment="k8s VIP"
 ```
 
 (По записи на сервис; regexp-wildcard `.*\\.nb3\\.me` зацепил бы и

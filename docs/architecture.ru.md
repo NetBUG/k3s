@@ -24,7 +24,7 @@
   │   ┌──────────────┐     ▼ HTTPRoute на приложение  │
   │   │ longhorn     │  paperless · navidrome · …     │
   │   │ реплика #2   │     │            │             │
-  │   └──────────────┘  Longhorn PVC  NFS (медиа,RO)  │
+  │   └──────────────┘  Longhorn PVC  hostPath(медиа) │
   └───────────────────────────────────────────────────┘
 ```
 
@@ -50,7 +50,7 @@ git push ──► GitHub ──► Flux source-controller
   infra-sources ─► infra-crds ─► infra-controllers ─► infra-config ─► apps
   (HelmRepos)    (Gateway API)  (metallb, traefik,   (Gateway, серт., (по одному Flux
                                 cert-manager,        пул MetalLB,     Kustomization
-                                longhorn, nfs-csi,   NFS PV медиа)    на приложение)
+                                longhorn, nfs-csi,   PV seafile)      на приложение)
                                 cloudflared)
 ```
 
@@ -63,7 +63,9 @@ git push ──► GitHub ──► Flux source-controller
 не привязан к узлу:
 
 1. **Состояние** — Longhorn реплицирует тома на оба узла; при переезде том
-   подключается там, где оказался под. Медиа — NFS, монтируется с любого узла.
+   подключается там, где оказался под. Исключение — крупная медиатека: она
+   лежит hostPath на массиве sowilo, поэтому такие поды несут nodeSelector
+   и остаются на месте.
 2. **Маршрутизация** — HTTPRoute → Service → IP пода; Traefik следует за endpoints.
 3. **Вход из LAN** — VIP MetalLB переезжает между узлами (L2-анонс).
 4. **Публичный вход** — cloudflared соединяется *наружу* с того узла, где
@@ -76,7 +78,7 @@ git push ──► GitHub ──► Flux source-controller
 | этот репозиторий | всё внутри кластера |
 | `nb3_tf` (OpenTofu) | Cloudflare: туннель, CNAME сервисов, настройки зоны |
 | Mikrotik | DHCP-резервации, статические DNS-записи split-horizon |
-| диски узлов | `/etc/rancher/k3s/config.yaml` (копии в `cluster-setup/`), NFS-экспорт |
+| диски узлов | `/etc/rancher/k3s/config.yaml` (копии в `cluster-setup/`), медиа-деревья в `/media` на sowilo |
 
 ## Состав компонентов
 
@@ -89,7 +91,7 @@ git push ──► GitHub ──► Flux source-controller
 | MetalLB | 0.16.1 | L2 VIP для входа из LAN |
 | cert-manager | 1.20.2 | wildcard `*.nb3.me` через Cloudflare DNS-01 |
 | Longhorn | 1.12.0 | реплицируемое хранилище; StorageClass по умолчанию |
-| csi-driver-nfs | 4.13.2 | монтирует NFS-экспорт с медиа |
+| csi-driver-nfs | 4.13.2 | установлен, сейчас не используется — NFS PV для медиа заменён на hostPath (см. [06](ru/06-navidrome-media.md)) |
 | cloudflared | 2026.5.2 | исходящий туннель для публичного доступа |
 | bjw-s app-template | 4.6.2 | Helm-чарт, на котором построен каждый модуль сервиса |
 

@@ -67,15 +67,14 @@ backup target Longhorn (S3-совместимый — подходит Cloudflar
 kubectl drain node1 --ignore-daemonsets --delete-emptydir-data
 kubectl get pods -A -o wide               # всё переезжает на node2
 curl -v https://paperless.nb3.me          # оба пути продолжают работать
-curl -v https://navidrome.nb3.me
 kubectl uncordon node1
 ```
 
 Почему это работает (см. [architecture.ru.md](../architecture.ru.md)):
 том Longhorn переподключается на node2 (реплика уже там) · MetalLB переносит
-L2-анонс VIP · вторая реплика cloudflared держит туннель · NFS монтируется
-с любого узла.
+L2-анонс VIP · вторая реплика cloudflared держит туннель.
 
-Оговорка: если node1 — одновременно медиа-узел, приложения на NFS (Navidrome)
-теряют медиа на время drain — состояние на Longhorn остаётся целым. Это
-ожидаемо: диск с медиа — единственная сознательная единая точка отказа.
+Оговорка: тест покрывает только приложения на Longhorn. Navidrome и Immich
+монтируют крупную медиатеку как hostPath на sowilo и прибиты туда
+nodeSelector — они не переезжают, и это осознанно (см. [06](06-navidrome-media.md)).
+Диск с медиа — единственная сознательная единая точка отказа.

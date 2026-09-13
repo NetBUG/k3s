@@ -10,7 +10,6 @@ resources:
   - cluster-issuer.yaml
   - gateway.yaml
   - gateway-certificate.yaml
-  - media-nfs-pv.yaml
   - seafile-local-pv.yaml
   # Cloudflare API token for DNS-01 (SOPS-encrypted).
   - cf-api-token.sops.yaml
