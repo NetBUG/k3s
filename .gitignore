@@ -8,6 +8,11 @@ age.key
 # *.raw was how a plaintext Secret reached a public repo on 2026-09-13:
 # it sat untracked next to its encrypted sibling and a `git add -A` swept it in.
 *.raw
+# Same class: scratch files holding tokens in the clear. Broad on purpose —
+# the failure mode is a hurried `git add -A`, not a considered `git add <file>`.
+tmp_*
+*token*.txt
+*.tokens
 
 # local scratch
 .DS_Store
