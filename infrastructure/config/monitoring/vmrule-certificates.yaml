@@ -1,0 +1,71 @@
+---
+# TLS certificate alerts. Written after the 2026-09-17 outage: the DNS-01
+# Cloudflare API token went invalid around 2026-08-16, every ACME renewal
+# failed for 32 days, the *.nb3.me wildcard expired on 2026-09-15, and
+# cloudflared — which verifies the origin certificate — then returned 502 for
+# every service on the shared tunnel at once.
+#
+# Deliberately NOT alerting on certmanager_certificate_ready_status: it
+# reported Ready=True throughout that entire incident, including two days
+# after the certificate had expired. Ready means "a Secret exists", not
+# "it is valid". The timestamp metrics are the only trustworthy signal.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: certificates
+  namespace: monitoring
+spec:
+  groups:
+    - name: certificates
+      rules:
+        # THE one that would have caught the 2026-09 outage on day one.
+        # cert-manager sets renewal_timestamp to 2/3 of the certificate's
+        # lifetime (~30 days before expiry for a 90-day Let's Encrypt cert).
+        # Once that moment passes, a healthy controller renews within minutes,
+        # so anything still overdue 6h later means renewal is failing —
+        # roughly 29 days of warning before users see anything.
+        - alert: CertificateRenewalOverdue
+          expr: (certmanager_certificate_renewal_timestamp_seconds - time()) < 0
+          for: 6h
+          labels:
+            severity: warning
+          annotations:
+            summary: "cert-manager has not renewed {{ $labels.namespace }}/{{ $labels.name }}"
+            description: >-
+              Renewal was due {{ $value | humanizeDuration }} ago and has not
+              completed. Check the Order and Challenge:
+              kubectl -n {{ $labels.namespace }} get certificaterequest,order,challenge
+        - alert: CertificateExpiringSoon
+          expr: (certmanager_certificate_expiration_timestamp_seconds - time()) < 21 * 24 * 3600
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.name }} expires soon"
+            description: >-
+              Expires in {{ $value | humanizeDuration }}. Renewal should already
+              have happened — treat as a failed renewal, not as normal ageing.
+        - alert: CertificateExpired
+          expr: (certmanager_certificate_expiration_timestamp_seconds - time()) <= 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.name }} HAS EXPIRED"
+            description: >-
+              Expired {{ $value | humanizeDuration }} ago. If this is the
+              Gateway's wildcard, cloudflared fails origin TLS verification and
+              every service on the shared tunnel returns 502.
+        # The metrics themselves disappearing is indistinguishable from
+        # "everything is fine" for every rule above — alert on their absence.
+        - alert: CertManagerMetricsMissing
+          expr: absent(certmanager_certificate_expiration_timestamp_seconds)
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "No cert-manager certificate metrics are being scraped"
+            description: >-
+              vmagent is not receiving certmanager_certificate_* series, so all
+              certificate alerts are silently inert. Check the VMServiceScrape
+              in the cert-manager namespace.

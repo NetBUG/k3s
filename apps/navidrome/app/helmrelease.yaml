@@ -47,11 +47,13 @@ spec:
           app:
             image:
               repository: docker.io/deluan/navidrome
-              # Must be >= the version that wrote the seeded DB. `latest` on
-              # 2026-06-28 (the DB's last write) was 0.62.0, and Navidrome
-              # migrations are forward-only — an older binary refuses a newer
-              # schema. 0.63.2 is the last release with real soak time;
-              # 0.64.0 shipped 2026-09-12 and can wait a few weeks.
+              # Migrations are forward-only, so this must be >= whatever
+              # wrote the seeded DB. Measured, not inferred: on first start
+              # 0.63.2 applied 18 pending migrations beginning with
+              # 20241020003138, so the Docker-era DB sat at a pre-Oct-2024
+              # schema — that compose file said `latest` but the image had
+              # been pulled once ~24 months earlier and never re-pulled.
+              # 0.64.0 shipped 2026-09-12 and can soak a few weeks.
               tag: "0.63.2"
             env:
               ND_MUSICFOLDER: /music

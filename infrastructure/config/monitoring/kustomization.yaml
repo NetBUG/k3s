@@ -4,3 +4,5 @@ resources:
   - vmstaticscrape-baremetal.yaml
   - grafana-httproute.yaml
   - vmrule-hardware.yaml
+  - vmservicescrape-cert-manager.yaml
+  - vmrule-certificates.yaml

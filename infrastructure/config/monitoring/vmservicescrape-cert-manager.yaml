@@ -1,0 +1,22 @@
+---
+# cert-manager was not scraped at all until 2026-09-17 — the wildcard cert
+# expired after a month of failed renewals and nothing noticed, because no
+# cert-manager metric ever reached VictoriaMetrics. The VMRule next to this
+# file is useless without it.
+#
+# vmagent runs selectAllByDefault=true with no namespace selector, so a
+# VMServiceScrape in the target's own namespace is picked up automatically.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMServiceScrape
+metadata:
+  name: cert-manager
+  namespace: cert-manager
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cert-manager
+      app.kubernetes.io/component: controller
+  endpoints:
+    # Port name comes from the chart's Service; :9402 targets http-metrics.
+    - port: tcp-prometheus-servicemonitor
+      interval: 60s

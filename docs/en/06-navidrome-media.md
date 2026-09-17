@@ -64,9 +64,14 @@ The old deployment (`~/compose/navidrome/`) left a 40MB `navidrome.db` in
 `/media/data/navidrome`, last written 2026-06-28. Keeping it preserves the
 user accounts, playlists and play history.
 
-**Version constraint:** `latest` on that date was **0.62.0**, and Navidrome
-migrations are forward-only — an older binary will not open a newer schema.
-The pinned tag must stay `>= 0.62.0`; it is currently `0.63.2`.
+**Version constraint:** migrations are forward-only, so the pinned tag must be
+at least the version that wrote the DB. Do not infer that version from the
+file's mtime and Docker Hub's release dates — the compose file said `latest`,
+but the image was pulled once ~24 months before the last write and never
+re-pulled, so the running binary was two years behind the tag. The DB's real
+schema only became visible on first start: 0.63.2 applied 18 pending
+migrations beginning with `20241020003138`, i.e. the DB was pre-Oct-2024
+(~0.53.x). Currently pinned `0.63.2`.
 
 Seed *before* enabling the app, so there is never a fresh DB to clobber:
 
@@ -86,15 +91,18 @@ untouched on disk — that is the rollback.
 Skipping the seed entirely is fine too: Navidrome creates an empty DB and you
 set up a user on first login.
 
-### What the empty library does to the seeded DB
+### Populating the library
 
-`Library/` starts empty, so the first scan finds none of the 1574 tracks the
-DB knows about. `Scanner.PurgeMissing` defaults to `never`, so those rows are
-kept and listed under *Missing Files* rather than deleted. Navidrome keys
-media on the path under `/music`, so if the files later land at the same
-relative paths the history reattaches by itself — that is the argument for
-populating `Library/` with the contents of `ARTISTS/` rather than with
-`ARTISTS/` as a subdirectory.
+Navidrome keys media on the path under `/music`, so putting the *contents* of
+`ARTISTS/` into `Library/` (rather than `ARTISTS/` as a subdirectory) keeps the
+paths the old DB already knows. `Scanner.PurgeMissing` defaults to `never`, so
+anything not yet copied is listed under *Missing Files* instead of being
+deleted, and a later copy can still reattach.
+
+First run, 2026-09-13: 284 files / 1.4G across 10 artist folders, scanned in
+6.6s, `tracksMissing=0`, one `.m3u` playlist picked up (two of its entries have
+mojibake paths and did not resolve). `firstTime=false` — the seeded user
+accounts came through, so it presents a login rather than the setup wizard.
 
 ## 3. Enable the app
 
