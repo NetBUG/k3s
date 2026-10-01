@@ -1,4 +1,4 @@
-# Connects to libvirtd on the KVM host (robothost / "nuc2", 192.168.0.162) over
+# Connects to libvirtd on the KVM host (robothost / "nuc2", 192.168.1.26) over
 # SSH. netbug is in the host's libvirt group, so qemu:///system is readable
 # without sudo. Requires the libvirt client library on the machine running tofu
 # (macOS: `brew install libvirt`).
@@ -7,7 +7,7 @@
 # and known_hosts must be passed explicitly via URI query params. Override
 # var.ssh_keyfile / var.known_hosts for a different workstation.
 provider "libvirt" {
-  uri = "qemu+ssh://netbug@192.168.0.162/system?keyfile=${var.ssh_keyfile}&known_hosts=${var.known_hosts}&sshauth=privkey"
+  uri = "qemu+ssh://netbug@192.168.1.26/system?keyfile=${var.ssh_keyfile}&known_hosts=${var.known_hosts}&sshauth=privkey"
 }
 
 variable "ssh_keyfile" {

@@ -82,7 +82,7 @@ spec:
         # Pin to sowilo: node01 lives on the flaky robothost hypervisor. If the
         # scraper ran on node01 it would die at the same instant robothost
         # crashes, losing the pre-crash temp/CPU samples. On sowilo it keeps
-        # scraping robothost (192.168.0.162) right up to the crash and survives
+        # scraping robothost (192.168.1.26) right up to the crash and survives
         # the node01 outage so monitoring/alerting stay up.
         nodeSelector:
           kubernetes.io/hostname: sowilo

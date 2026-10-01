@@ -10,12 +10,12 @@ metadata:
 spec:
   jobName: baremetal-node
   targetEndpoints:
-    - targets: ["192.168.0.237:9100"]
+    - targets: ["192.168.1.99:9100"]
       labels:
         host: kvm-a
         role: hypervisor
         arch: amd64
-    - targets: ["192.168.0.26:9100"]
+    - targets: ["192.168.1.26:9100"]
       labels:
         host: nuc2
         role: hypervisor
@@ -25,7 +25,7 @@ spec:
         host: arm-board
         role: sbc
         arch: arm64
-    - targets: ["192.168.0.92:9100"]
+    - targets: ["192.168.1.125:9100"]
       labels:
         host: nas
         role: nas

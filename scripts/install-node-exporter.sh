@@ -6,7 +6,7 @@
 #
 # Why bare metal: the k3s nodes are KVM guests and cannot read the host's thermal
 # sensors. Run this on the physical machines instead:
-#   192.168.0.237 (kvm-a), 192.168.0.162 (kvm-b), 192.168.0.69 (arm), 192.168.0.92 (nas)
+#   192.168.1.99 (kvm-a), 192.168.1.26 (kvm-b), 192.168.0.69 (arm), 192.168.1.125 (nas)
 #
 # Usage (on each host):
 #   sudo ./install-node-exporter.sh
@@ -128,8 +128,8 @@ Done. node-exporter is serving metrics at:  http://$(hostname -I | awk '{print $
 Firewall: vmagent scrapes from the cluster, whose traffic egresses as the KVM
 host's LAN IP. If this host runs a firewall, allow tcp/${LISTEN_PORT} from your LAN, e.g.:
 
-  ufw:   sudo ufw allow from 192.168.0.0/24 to any port ${LISTEN_PORT} proto tcp
-  nftables/firewalld: open tcp/${LISTEN_PORT} for 192.168.0.0/24
+  ufw:   sudo ufw allow from 192.168.1.0/24 to any port ${LISTEN_PORT} proto tcp
+  nftables/firewalld: open tcp/${LISTEN_PORT} for 192.168.1.0/24
 
 This host's IP must be listed in:
   infrastructure/config/monitoring/vmstaticscrape-baremetal.yaml

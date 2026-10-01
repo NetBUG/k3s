@@ -5,7 +5,7 @@ guest IP `192.168.122.134`) as code, for **inventory / reproducibility**.
 The domain is hand-created; this config adopts it so its shape is documented
 and reviewable in git. It is **not** used to manage the VM's lifecycle.
 
-- **Host:** `robothost` / "nuc2" (`192.168.0.162`), libvirt `qemu:///system`.
+- **Host:** `robothost` / "nuc2" (`192.168.1.26`), libvirt `qemu:///system`.
 - **Domain:** `UbuntuK3S` (UUID `e14cf3ca-00b7-4c09-9ca2-bbeef80f84ef`).
 - **Live definition of record:** [`node01.domain.xml`](node01.domain.xml)
   (`virsh dumpxml UbuntuK3S`). Re-capture it if you change the VM by hand.
