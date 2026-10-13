@@ -16,3 +16,4 @@ tmp_*
 
 # local scratch
 .DS_Store
+infrastructure/controllers/external-dns/unifi-dns-secret.yaml
