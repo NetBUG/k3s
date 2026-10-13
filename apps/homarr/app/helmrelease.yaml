@@ -34,6 +34,18 @@ spec:
         enabled: true
         storageClassName: longhorn
         size: 1Gi
+    # Startup rewrites ~29k icon rows into SQLite; on a loaded node that blocks
+    # the event loop long enough for the chart's 1s x 3 liveness probe to kill
+    # it mid-job, in a loop (2026-10-13, node01 down, sowilo load 12). The
+    # chart has no startupProbe, so the liveness probe tolerates ~3 minutes.
+    livenessProbe:
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 18
+      httpGet:
+        path: /api/health/live
+        port: 7575
     # The route lives in httproute.yaml (LAN redirect rule).
     httproute:
       enabled: false

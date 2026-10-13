@@ -3,6 +3,9 @@
 
     HOMARR_API_KEY=... UNIFI_CLOUD_URL=... ./sync.py [--dry-run]
 
+Variables can also live in a gitignored .env next to this script
+(KEY=value lines); real environment variables take precedence.
+
 Apps are matched by name and created or updated in place. Each board in
 panel.yaml is created if missing and its content is replaced wholesale, so
 the result does not depend on what the UI did in between. Boards and apps
@@ -166,11 +169,22 @@ def sync_home(api, panel, board_ids):
     api.call("PATCH", f"/api/boards/{user}/mobile-home", {})
 
 
+def load_env_file(path):
+    if not path.exists():
+        return
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dry-run", action="store_true", help="read only; print the writes it would make")
     ap.add_argument("--panel", default=HERE / "panel.yaml", type=Path)
     args = ap.parse_args()
+    load_env_file(HERE / ".env")
     key = os.environ.get("HOMARR_API_KEY") or sys.exit("HOMARR_API_KEY is not set")
     api = Homarr(os.environ.get("HOMARR_URL", "https://home.nb3.me"), key, args.dry_run)
     panel = yaml.safe_load(args.panel.read_text())
