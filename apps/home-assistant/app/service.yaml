@@ -29,3 +29,7 @@ ports:
 endpoints:
   - addresses:
       - 192.168.1.27
+    # Traefik skips endpoints without an explicit ready=true (unset counts
+    # as ready per the API, but Traefik answered 503 "no servers").
+    conditions:
+      ready: true

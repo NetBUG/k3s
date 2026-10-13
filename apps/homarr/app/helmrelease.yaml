@@ -1,7 +1,7 @@
 ---
 # Homarr panel on home.nb3.me. Boards, apps and integrations live in its SQLite
 # DB (Longhorn) and are edited in the UI — see docs/en/11-homarr-panel.md for
-# the board layout. Login is Homarr's own credentials provider.
+# the board layout (panel.yaml + sync.py). Login is Homarr's own credentials provider.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:

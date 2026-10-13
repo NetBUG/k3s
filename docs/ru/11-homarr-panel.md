@@ -26,22 +26,42 @@ LAN + поддельный заголовок `wan`, WAN + пустой заго
 заголовку прокси для входа, поэтому LAN-доска всё равно требует входа, один
 раз на устройство (`AUTH_SESSION_EXPIRY_TIME: 365d`).
 
-## Доски (создаются в UI Homarr)
+## Доски (`apps/homarr/panel.yaml`)
 
-Доски, приложения и интеграции живут в SQLite-базе Homarr на томе Longhorn
-`homarr-database`, а не в git. Воссоздавать по этой таблице:
+Доски, приложения и состав групп описаны в `apps/homarr/panel.yaml` и
+применяются скриптом `apps/homarr/sync.py` через API Homarr. В базе Homarr
+(том Longhorn `homarr-database`) лежит применённая копия; повторный запуск
+пересобирает каждую управляемую доску, поэтому плитки, добавленные на эти доски
+в UI, пропадут. Доски и приложения, не названные в файле, не трогаются.
 
-| Доска | Доступ | Содержимое |
+| Доска | Доступ | Группы |
 |---|---|---|
-| `public` | публичная; домашняя для анонимов | Navidrome `music`, Immich `photos`, Seafile `sync` |
-| `remote` | приватная; доска пользователя по умолчанию | всё; UniFi -> `https://unifi.ui.com/consoles/<console-id>` |
-| `lan` | приватная | всё; UniFi -> `https://192.168.1.1` |
+| `public` | публичная; домашняя для анонимов | Public: Navidrome, Immich, Seafile |
+| `remote` | приватная; доска пользователя по умолчанию | Public; Personal: Paperless; Auxiliary: Grafana, Home Assistant, UniFi Cloud |
+| `lan` | приватная; `/` из LAN перенаправляется сюда | Public; Personal: Syncthing, Paperless; Auxiliary: Grafana, Home Assistant, UniFi |
 
-Группы на приватных досках: public (Navidrome, Immich, Seafile), personal
-(Syncthing UI, Paperless), auxiliary (Grafana, мониторинг, Home Assistant,
-UniFi). Каждое приложение кластера на всех досках открывается по
-`https://<имя>.nb3.me`: то же имя в LAN резолвится в VIP, снаружи — в
-Cloudflare.
+У Syncthing (`http://192.168.1.125:8384`, Docker на sowilo) и консоли UniFi
+(`https://192.168.1.1`) нет пути из WAN, поэтому они только на `lan`.
+Репозиторий публичный, так что URL облачной консоли UniFi берётся из
+окружения, а не из файла:
+
+```bash
+cd apps/homarr
+export HOMARR_API_KEY=...      # Homarr: Management -> Tools -> API
+export UNIFI_CLOUD_URL=https://unifi.ui.com/consoles/...
+./sync.py --dry-run            # только чтение, печатает планируемые записи
+./sync.py
+```
+
+Id секций и плиток выводятся из имён доски/группы/приложения, поэтому повторный
+запуск пишет идентичное содержимое. Плитки 2x1 на 12-колоночной базовой
+раскладке и 1x1 на 3-колоночной мобильной. Скрипту нужен PyYAML.
+
+Заметки по API: REST-чтения содержимого доски нет; скрипт читает его через
+tRPC-маршрут `board.getBoardByName` с тем же заголовком `ApiKey`. Cloudflare
+отвергает User-Agent `Python-urllib` по умолчанию (ошибка 1010), поэтому
+скрипт шлёт свой. `PATCH /api/boards/{id}/home` требует тело `{}`, хотя в
+схеме тела нет.
 
 ## 1. Секрет
 
@@ -63,7 +83,7 @@ sops -e -i secret.sops.yaml
    `http://192.168.1.27:8123` на origin Traefik. Если применить это первым,
    `ha` будет отдавать 404, пока не появится HTTPRoute.
 3. Открыть `https://home.nb3.me` из LAN, создать администратора (onboarding),
-   собрать три доски, назначить `public` домашней доской для анонимов.
+   создать API-ключ, затем запустить `apps/homarr/sync.py`.
 
 ## Home Assistant
 

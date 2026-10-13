@@ -25,21 +25,42 @@ The redirect is the only network-aware piece. Homarr itself cannot trust a
 proxy header for login, so the LAN board still needs a login, once per device
 (`AUTH_SESSION_EXPIRY_TIME: 365d`).
 
-## Boards (created in the Homarr UI)
+## Boards (`apps/homarr/panel.yaml`)
 
-Boards, apps and integrations live in Homarr's SQLite DB on the Longhorn
-volume `homarr-database`, not in git. Recreate them from this table:
+Boards, apps and group membership are declared in `apps/homarr/panel.yaml`
+and applied by `apps/homarr/sync.py` through the Homarr API. Homarr's DB (the
+Longhorn volume `homarr-database`) holds the applied copy; re-running the
+script rebuilds every managed board, so tiles added in the UI to those boards
+are dropped. Boards and apps not named in the file are left alone.
 
-| Board | Access | Contents |
+| Board | Access | Groups |
 |---|---|---|
-| `public` | public; home board for anonymous visitors | Navidrome `music`, Immich `photos`, Seafile `sync` |
-| `remote` | private; the user's default board | everything; UniFi -> `https://unifi.ui.com/consoles/<console-id>` |
-| `lan` | private | everything; UniFi -> `https://192.168.1.1` |
+| `public` | public; home board for anonymous visitors | Public: Navidrome, Immich, Seafile |
+| `remote` | private; the user's default board | Public; Personal: Paperless; Auxiliary: Grafana, Home Assistant, UniFi Cloud |
+| `lan` | private; LAN `/` redirects here | Public; Personal: Syncthing, Paperless; Auxiliary: Grafana, Home Assistant, UniFi |
 
-Groups on the private boards: public (Navidrome, Immich, Seafile), personal
-(Syncthing UI, Paperless), auxiliary (Grafana, monitoring, Home Assistant,
-UniFi). Every cluster app uses its `https://<name>.nb3.me` URL on every board:
-the same name resolves to the VIP on the LAN and to Cloudflare outside.
+Syncthing (`http://192.168.1.125:8384`, Docker on sowilo) and the UniFi
+console (`https://192.168.1.1`) have no WAN route, so they appear only on
+`lan`. The repo is public, so the UniFi cloud console URL comes from the
+environment, not the file:
+
+```bash
+cd apps/homarr
+export HOMARR_API_KEY=...      # Homarr: Management -> Tools -> API
+export UNIFI_CLOUD_URL=https://unifi.ui.com/consoles/...
+./sync.py --dry-run            # reads only, prints the writes
+./sync.py
+```
+
+Section and item ids are derived from board/group/app names, so a re-run
+writes identical content. Tiles are 2x1 on the 12-column base layout and 1x1
+on the 3-column mobile layout. The script needs PyYAML.
+
+API notes: there is no REST read for board content; the script reads it via
+the tRPC route `board.getBoardByName` with the same `ApiKey` header.
+Cloudflare rejects the default `Python-urllib` User-Agent (error 1010), so
+the script sends its own. `PATCH /api/boards/{id}/home` needs a `{}` body
+despite the schema listing none.
 
 ## 1. Secret
 
@@ -61,7 +82,7 @@ the DB has to be re-entered.
    from `http://192.168.1.27:8123` to the Traefik origin. Applying this first
    would 404 `ha` until the HTTPRoute exists.
 3. Open `https://home.nb3.me` from the LAN, create the admin user (onboarding),
-   build the three boards, set `public` as the home board for anonymous users.
+   create an API key, then run `apps/homarr/sync.py`.
 
 ## Home Assistant
 

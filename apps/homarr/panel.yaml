@@ -1,0 +1,65 @@
+# Homarr panel layout — the source of truth for boards and app tiles.
+# Applied by sync.py through the Homarr API; re-running it overwrites the
+# managed boards, so edit here rather than in the UI.
+#
+# ${VAR} is substituted from the environment. The repo is public: anything
+# that identifies the console (UNIFI_CLOUD_URL) stays out of this file.
+
+icons: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg
+
+apps:
+  Navidrome:
+    href: https://music.nb3.me
+    icon: navidrome
+  Immich:
+    href: https://photos.nb3.me
+    icon: immich
+  Seafile:
+    href: https://sync.nb3.me
+    icon: seafile
+  Paperless:
+    href: https://paperless.nb3.me
+    icon: paperless-ngx
+  Syncthing:
+    # Docker on sowilo, LAN only (no route through Traefik or the tunnel).
+    href: http://192.168.1.125:8384
+    icon: syncthing
+  Grafana:
+    href: https://grafana.nb3.me
+    icon: grafana
+  Home Assistant:
+    href: https://ha.nb3.me
+    icon: home-assistant
+  UniFi:
+    href: https://192.168.1.1
+    icon: ubiquiti-unifi
+  UniFi Cloud:
+    href: ${UNIFI_CLOUD_URL}
+    icon: ubiquiti-unifi
+
+# Group membership per board. `public` is what anonymous WAN visitors see;
+# `remote` is the logged-in default; `lan` is where LAN devices land
+# (HTTPRoute redirect, see app/httproute.yaml).
+boards:
+  public:
+    public: true
+    groups:
+      Public: [Navidrome, Immich, Seafile]
+  remote:
+    public: false
+    groups:
+      Public: [Navidrome, Immich, Seafile]
+      Personal: [Paperless]
+      Auxiliary: [Grafana, Home Assistant, UniFi Cloud]
+  lan:
+    public: false
+    groups:
+      Public: [Navidrome, Immich, Seafile]
+      Personal: [Syncthing, Paperless]
+      Auxiliary: [Grafana, Home Assistant, UniFi]
+
+# Home board for anonymous visitors (global setting) and for the API key's
+# user (the board shown after login over the WAN).
+home:
+  anonymous: public
+  user: remote

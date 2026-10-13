@@ -64,9 +64,12 @@ does not own are never touched. Expected result:
 | `sync.nb3.me` | `192.168.1.100` |
 | `paperless.nb3.me` | `192.168.1.100` |
 | `grafana.nb3.me` | `192.168.1.100` |
+| `ha.nb3.me` | `192.168.1.100` |
+| `home.nb3.me` | `192.168.1.100` |
 
-Names without an HTTPRoute are left out automatically: `ha` (the tunnel
-sends it straight to `192.168.1.27:8123`, not via Traefik), `k3s` and `ssh-*`. Never add a wildcard by hand: it would also catch
+Names without an HTTPRoute are left out automatically: `k3s` and `ssh-*`.
+`ha` and `home` have HTTPRoutes and get records too (see
+[11](11-homarr-panel.md)). Never add a wildcard by hand: it would also catch
 `ssh-agent.nb3.me` and break the SSH tunnel.
 
 On the LAN, Grafana is reached without Cloudflare Access (only Grafana's own

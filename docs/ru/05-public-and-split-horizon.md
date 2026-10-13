@@ -63,9 +63,11 @@ speaker MetalLB на sowilo через `enp1s0` — см.
 | `sync.nb3.me` | `192.168.1.100` |
 | `paperless.nb3.me` | `192.168.1.100` |
 | `grafana.nb3.me` | `192.168.1.100` |
+| `ha.nb3.me` | `192.168.1.100` |
+| `home.nb3.me` | `192.168.1.100` |
 
-Имена без HTTPRoute исключаются сами: `ha` (туннель ведёт его прямо на `192.168.1.27:8123`, мимо
-Traefik), `k3s` и `ssh-*`. Wildcard вручную не добавлять: он зацепил бы и `ssh-agent.nb3.me`,
+Имена без HTTPRoute исключаются сами: `k3s` и `ssh-*`. У `ha` и `home` есть
+HTTPRoute, и записи они тоже получают (см. [11](11-homarr-panel.md)). Wildcard вручную не добавлять: он зацепил бы и `ssh-agent.nb3.me`,
 сломав SSH-туннель.
 
 Из LAN Grafana доступна без Cloudflare Access (только собственный логин
