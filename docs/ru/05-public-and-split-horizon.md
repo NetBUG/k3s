@@ -50,7 +50,11 @@ speaker MetalLB на sowilo через `enp1s0` — см.
 `infrastructure/config/metallb-pool.yaml`. node01 — гость libvirt за NAT и
 анонсировать LAN-адрес не может в принципе.
 
-Роутер → локальные DNS-записи, по A-записи на каждый сервис за Traefik:
+Записи ведёт ExternalDNS (`infrastructure/controllers/external-dns`): для
+каждого hostname из HTTPRoute на роутере создаётся A-запись (UniFi Network ≥
+10.3.58, DNS Policies API, API-ключ) на адрес Gateway плюс TXT-запись
+владения `k8s.homelab.a-<имя>`. Запись для нового приложения появляется, как
+только смержен его HTTPRoute. Чужие записи не трогаются. Ожидаемый результат:
 
 | Имя | Адрес |
 |---|---|
@@ -60,8 +64,8 @@ speaker MetalLB на sowilo через `enp1s0` — см.
 | `paperless.nb3.me` | `192.168.1.100` |
 | `grafana.nb3.me` | `192.168.1.100` |
 
-Не добавлять `ha` (туннель ведёт его прямо на `192.168.1.27:8123`, мимо
-Traefik), `k3s` и `ssh-*`. Без wildcard: он зацепил бы и `ssh-agent.nb3.me`,
+Имена без HTTPRoute исключаются сами: `ha` (туннель ведёт его прямо на `192.168.1.27:8123`, мимо
+Traefik), `k3s` и `ssh-*`. Wildcard вручную не добавлять: он зацепил бы и `ssh-agent.nb3.me`,
 сломав SSH-туннель.
 
 Из LAN Grafana доступна без Cloudflare Access (только собственный логин

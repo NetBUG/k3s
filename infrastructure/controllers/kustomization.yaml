@@ -8,3 +8,4 @@ resources:
   - csi-driver-nfs
   - cloudflared
   - monitoring
+  - external-dns

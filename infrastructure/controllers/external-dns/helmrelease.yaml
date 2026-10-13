@@ -1,0 +1,61 @@
+---
+# Split-horizon records on the Ubiquiti router, derived from HTTPRoutes.
+# Every HTTPRoute hostname attached to the `homelab` Gateway gets an A record
+# on 192.168.1.1 pointing at the Gateway address (the MetalLB VIP
+# 192.168.1.100). Names without an HTTPRoute (ha, k3s, ssh-*) are never
+# touched, so they keep resolving to Cloudflare. Public records stay in nb3_tf.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: external-dns-unifi
+  namespace: external-dns
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: external-dns
+      version: 1.22.0 # ExternalDNS 0.22 (webhook needs >= 0.21)
+      sourceRef:
+        kind: HelmRepository
+        name: external-dns
+        namespace: flux-system
+  values:
+    fullnameOverride: external-dns-unifi
+    provider:
+      name: webhook
+      webhook:
+        image:
+          repository: ghcr.io/home-operations/external-dns-unifi-webhook
+          tag: 0.10.12 # needs UniFi Network >= 10.3.58 (router runs 10.6.106)
+        env:
+          - name: UNIFI_HOST
+            value: https://192.168.1.1
+          - name: UNIFI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: unifi-dns-secret
+                key: UNIFI_API_KEY
+          - name: LOG_FORMAT
+            value: text
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http-webhook
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: http-webhook
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+    triggerLoopOnEvent: true
+    # sync deletes only records carrying this instance's TXT ownership marker;
+    # hand-made router records are left alone.
+    policy: sync
+    sources:
+      - gateway-httproute
+    txtOwnerId: homelab
+    txtPrefix: k8s.homelab.%{record_type}-
+    domainFilters:
+      - nb3.me

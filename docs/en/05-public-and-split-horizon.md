@@ -50,7 +50,12 @@ sowilo's MetalLB speaker on `enp1s0` only — see
 `infrastructure/config/metallb-pool.yaml`. node01 is a libvirt guest behind NAT
 and can never announce a LAN address.
 
-Router → local DNS records, one A record per Traefik-routed service:
+The records are maintained by ExternalDNS
+(`infrastructure/controllers/external-dns`): every HTTPRoute hostname gets an
+A record on the router (UniFi Network ≥ 10.3.58, DNS Policies API, API key)
+pointing at the Gateway address, plus a `k8s.homelab.a-<name>` TXT ownership
+record. A new app's LAN record appears when its HTTPRoute merges. Records it
+does not own are never touched. Expected result:
 
 | Name | Address |
 |---|---|
@@ -60,8 +65,8 @@ Router → local DNS records, one A record per Traefik-routed service:
 | `paperless.nb3.me` | `192.168.1.100` |
 | `grafana.nb3.me` | `192.168.1.100` |
 
-Leave out `ha` (the tunnel sends it straight to `192.168.1.27:8123`, not via
-Traefik), `k3s` and `ssh-*`. No wildcard: it would also catch
+Names without an HTTPRoute are left out automatically: `ha` (the tunnel
+sends it straight to `192.168.1.27:8123`, not via Traefik), `k3s` and `ssh-*`. Never add a wildcard by hand: it would also catch
 `ssh-agent.nb3.me` and break the SSH tunnel.
 
 On the LAN, Grafana is reached without Cloudflare Access (only Grafana's own
