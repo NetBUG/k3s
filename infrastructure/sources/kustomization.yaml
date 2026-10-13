@@ -9,4 +9,5 @@ resources:
   - bjw-s.yaml
   - victoria-metrics.yaml
   - external-dns.yaml
+  - homarr.yaml
   - seafile.yaml

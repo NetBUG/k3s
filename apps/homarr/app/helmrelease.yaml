@@ -1,0 +1,39 @@
+---
+# Homarr panel on home.nb3.me. Boards, apps and integrations live in its SQLite
+# DB (Longhorn) and are edited in the UI — see docs/en/11-homarr-panel.md for
+# the board layout. Login is Homarr's own credentials provider.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: homarr
+  namespace: homarr
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: homarr
+      version: 8.34.1 # Homarr v2.4.1
+      sourceRef:
+        kind: HelmRepository
+        name: homarr
+        namespace: flux-system
+  values:
+    env:
+      TZ: Europe/Moscow
+      AUTH_PROVIDERS: credentials
+      # Long session: each LAN device logs in once.
+      AUTH_SESSION_EXPIRY_TIME: 365d
+    database:
+      type: sqlite
+    envSecrets:
+      dbEncryption:
+        existingSecret: db-encryption
+        key: db-encryption-key
+    persistence:
+      homarrDatabase:
+        enabled: true
+        storageClassName: longhorn
+        size: 1Gi
+    # The route lives in httproute.yaml (LAN redirect rule).
+    httproute:
+      enabled: false
