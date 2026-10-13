@@ -134,6 +134,11 @@ tofu apply
 
 ### LAN-путь — сейчас не работает ни для одного сервиса
 
+> **Исправлено 2026-10-13 (вариант B ниже):** VIP теперь `192.168.1.100`,
+> анонсируется с sowilo; записи на роутере — в
+> [05](05-public-and-split-horizon.md#3-split-horizon-на-роутере-ubiquiti).
+> Остаток раздела — диагноз 2026-09, оставлен для истории.
+
 Замерено 2026-09-13: split-horizon на Mikrotik из [05](05-public-and-split-horizon.md)
 так и не настроили. `paperless.nb3.me`, `photos.nb3.me` и `music.nb3.me` с
 роутера резолвятся в edge-адреса Cloudflare, то есть LAN-клиенты уже сегодня

@@ -12,14 +12,14 @@
               │   <tunnel>.cfargotunnel   │
               └────────────┬──────────────┘
                            │ outbound-only tunnel
-   LAN 192.168.x.0/24      │
+   LAN 192.168.1.0/24      │
   ┌────────────────────────┼──────────────────────────┐
   │                        ▼                          │
   │   node1 (server)   cloudflared pod                │
   │   ┌──────────────┐     │ http_host_header         │
   │   │ k3s: etcd,   │     ▼                          │
   │   │ api, coredns │  Traefik v3  ◄── MetalLB VIP ──┼── LAN clients
-  │   └──────────────┘  (Gateway API)  192.168.5.200  │   (Mikrotik DNS:
+  │   └──────────────┘  (Gateway API)  192.168.1.100  │   (Ubiquiti DNS:
   │   node2 (agent)        │                          │   *.nb3.me → VIP)
   │   ┌──────────────┐     ▼ HTTPRoute per app        │
   │   │ longhorn     │  paperless · navidrome · …     │
@@ -33,7 +33,7 @@
 | Path | DNS | TLS | Flow |
 |---|---|---|---|
 | Public | Cloudflare: `<app>.nb3.me` CNAME → tunnel | CF edge cert; CF→origin uses the Gateway's Let's Encrypt cert (`origin_server_name` set in nb3_tf, no `noTLSVerify`) | client → CF edge → tunnel → cloudflared pod → Traefik :443 → HTTPRoute → app |
-| LAN | Mikrotik static DNS: `<app>.nb3.me` → MetalLB VIP | Let's Encrypt wildcard `*.nb3.me` (cert-manager DNS-01) | client → VIP → Traefik :443 → HTTPRoute → app |
+| LAN | Ubiquiti local DNS: `<app>.nb3.me` → MetalLB VIP `192.168.1.100` (announced from sowilo) | Let's Encrypt wildcard `*.nb3.me` (cert-manager DNS-01) | client → VIP → Traefik :443 → HTTPRoute → app |
 
 Split-horizon constraint: the nb3.me zone has `always_use_https=on` (required by
 the SSH tunnel — do not change), so browsers are sent to HTTPS even on the LAN
@@ -76,7 +76,7 @@ node-independent:
 |---|---|
 | this repo | everything inside the cluster |
 | `nb3_tf` (OpenTofu) | Cloudflare: tunnel, per-service CNAMEs, zone settings |
-| Mikrotik | DHCP reservations, split-horizon static DNS entries |
+| Ubiquiti router | DHCP reservations, split-horizon local DNS records |
 | node disks | `/etc/rancher/k3s/config.yaml` (copies in `cluster-setup/`), the media trees under `/media` on sowilo |
 
 ## Component inventory

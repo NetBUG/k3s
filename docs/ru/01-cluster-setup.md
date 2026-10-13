@@ -11,7 +11,7 @@
 ## 1. Подготовка узла
 
 ```bash
-# Статический IP — зарезервировать в DHCP-сервере Mikrotik или настроить netplan.
+# Статический IP — зарезервировать в DHCP-сервере роутера (Ubiquiti) или настроить netplan.
 # Зависимости Longhorn:
 sudo apt update && sudo apt install -y open-iscsi nfs-common
 sudo systemctl enable --now iscsid

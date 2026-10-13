@@ -135,6 +135,11 @@ tofu apply
 
 ### LAN path — nothing works here yet, for any service
 
+> **Fixed 2026-10-13 (option B below):** the VIP is now `192.168.1.100`,
+> announced from sowilo; router records are listed in
+> [05](05-public-and-split-horizon.md#3-split-horizon-on-the-ubiquiti-router).
+> The rest of this section is the 2026-09 diagnosis, kept for history.
+
 Measured 2026-09-13: the Mikrotik split-horizon described in [05](05-public-and-split-horizon.md)
 was never configured. `paperless.nb3.me`, `photos.nb3.me` and `music.nb3.me`
 all resolve to Cloudflare edge IPs from the LAN router, so LAN clients already

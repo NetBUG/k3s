@@ -43,21 +43,42 @@ git add -A && git commit -m "Add tunnel token" && git push
 cloudflared подключается наружу; проверка: `kubectl -n cloudflared logs deploy/cloudflared`
 должен показать 4 зарегистрированных соединения с edge.
 
-## 3. Split-horizon на Mikrotik
+## 3. Split-horizon на роутере Ubiquiti
 
-```
-/ip dns static add name=paperless.nb3.me address=192.168.5.200 comment="k8s VIP"
-/ip dns static add name=music.nb3.me address=192.168.5.200 comment="k8s VIP"
-```
+VIP — `192.168.1.100` (вне диапазона DHCP); его анонсирует по ARP только
+speaker MetalLB на sowilo через `enp1s0` — см.
+`infrastructure/config/metallb-pool.yaml`. node01 — гость libvirt за NAT и
+анонсировать LAN-адрес не может в принципе.
 
-(По записи на сервис; regexp-wildcard `.*\\.nb3\\.me` зацепил бы и
-`ssh-agent.nb3.me`, сломав SSH-туннель — не делать.)
+Роутер → локальные DNS-записи, по A-записи на каждый сервис за Traefik:
+
+| Имя | Адрес |
+|---|---|
+| `music.nb3.me` | `192.168.1.100` |
+| `photos.nb3.me` | `192.168.1.100` |
+| `sync.nb3.me` | `192.168.1.100` |
+| `paperless.nb3.me` | `192.168.1.100` |
+| `grafana.nb3.me` | `192.168.1.100` |
+
+Не добавлять `ha` (туннель ведёт его прямо на `192.168.1.27:8123`, мимо
+Traefik), `k3s` и `ssh-*`. Без wildcard: он зацепил бы и `ssh-agent.nb3.me`,
+сломав SSH-туннель.
+
+Из LAN Grafana доступна без Cloudflare Access (только собственный логин
+Grafana) — намеренно, чтобы дашборды работали при падении WAN.
+
+Клиенты, которые не используют DNS роутера (резолвер от VPN, DoH в браузере),
+этих записей не видят; на такой машине прописать те же имена в `/etc/hosts`.
 
 ## 4. Проверка обоих путей
 
 ```bash
+# LAN-путь без DNS (работает ещё до записей на роутере):
+curl -sI --resolve paperless.nb3.me:443:192.168.1.100 https://paperless.nb3.me
+arp -n 192.168.1.100                         # -> MAC sowilo (b4:2e:99:2c:55:11)
+
 # LAN (резолвится в VIP, сертификат = wildcard Let's Encrypt):
-dig +short paperless.nb3.me @192.168.5.1     # -> 192.168.5.200
+dig +short paperless.nb3.me @192.168.1.1     # -> 192.168.1.100
 curl -v https://paperless.nb3.me 2>&1 | grep -E "subject|issuer"
 
 # Публично (принудительный резолв через Cloudflare):

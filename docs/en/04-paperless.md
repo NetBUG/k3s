@@ -32,8 +32,8 @@ git add -A && git commit -m "Add paperless" && git push
 flux reconcile ks apps --with-source
 ```
 
-LAN access before milestone 05: add the Mikrotik static DNS entry
-`paperless.nb3.me → 192.168.5.200` now (public path comes in [05](05-public-and-split-horizon.md)).
+LAN access before milestone 05: add the router's local DNS record
+`paperless.nb3.me → 192.168.1.100` now (public path comes in [05](05-public-and-split-horizon.md)).
 
 ## Verify
 

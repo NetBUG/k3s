@@ -32,8 +32,8 @@ git add -A && git commit -m "Add paperless" && git push
 flux reconcile ks apps --with-source
 ```
 
-Доступ из LAN до этапа 05: уже сейчас добавить статическую DNS-запись на
-Mikrotik `paperless.nb3.me → 192.168.5.200` (публичный путь — в [05](05-public-and-split-horizon.md)).
+Доступ из LAN до этапа 05: уже сейчас добавить локальную DNS-запись на
+роутере `paperless.nb3.me → 192.168.1.100` (публичный путь — в [05](05-public-and-split-horizon.md)).
 
 ## Проверка
 

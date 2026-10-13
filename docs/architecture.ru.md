@@ -12,14 +12,14 @@
               │   <tunnel>.cfargotunnel   │
               └────────────┬──────────────┘
                            │ туннель (только исходящие)
-   LAN 192.168.x.0/24      │
+   LAN 192.168.1.0/24      │
   ┌────────────────────────┼──────────────────────────┐
   │                        ▼                          │
   │   node1 (server)   под cloudflared                │
   │   ┌──────────────┐     │ http_host_header         │
   │   │ k3s: etcd,   │     ▼                          │
   │   │ api, coredns │  Traefik v3  ◄── MetalLB VIP ──┼── клиенты LAN
-  │   └──────────────┘  (Gateway API)  192.168.5.200  │   (DNS Mikrotik:
+  │   └──────────────┘  (Gateway API)  192.168.1.100  │   (DNS Ubiquiti:
   │   node2 (agent)        │                          │   *.nb3.me → VIP)
   │   ┌──────────────┐     ▼ HTTPRoute на приложение  │
   │   │ longhorn     │  paperless · navidrome · …     │
@@ -33,7 +33,7 @@
 | Путь | DNS | TLS | Поток |
 |---|---|---|---|
 | Публичный | Cloudflare: `<app>.nb3.me` CNAME → туннель | сертификат CF edge; CF→origin использует Let's Encrypt сертификат Gateway (`origin_server_name` задан в nb3_tf, без `noTLSVerify`) | клиент → CF edge → туннель → под cloudflared → Traefik :443 → HTTPRoute → приложение |
-| LAN | статический DNS Mikrotik: `<app>.nb3.me` → VIP MetalLB | wildcard Let's Encrypt `*.nb3.me` (cert-manager DNS-01) | клиент → VIP → Traefik :443 → HTTPRoute → приложение |
+| LAN | локальный DNS Ubiquiti: `<app>.nb3.me` → VIP MetalLB `192.168.1.100` (анонс с sowilo) | wildcard Let's Encrypt `*.nb3.me` (cert-manager DNS-01) | клиент → VIP → Traefik :443 → HTTPRoute → приложение |
 
 Ограничение split-horizon: у зоны nb3.me включён `always_use_https=on`
 (нужен SSH-туннелю — не менять), поэтому браузеры уходят на HTTPS даже в LAN.
@@ -77,7 +77,7 @@ git push ──► GitHub ──► Flux source-controller
 |---|---|
 | этот репозиторий | всё внутри кластера |
 | `nb3_tf` (OpenTofu) | Cloudflare: туннель, CNAME сервисов, настройки зоны |
-| Mikrotik | DHCP-резервации, статические DNS-записи split-horizon |
+| Роутер Ubiquiti | DHCP-резервации, локальные DNS-записи split-horizon |
 | диски узлов | `/etc/rancher/k3s/config.yaml` (копии в `cluster-setup/`), медиа-деревья в `/media` на sowilo |
 
 ## Состав компонентов

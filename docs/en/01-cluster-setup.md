@@ -11,7 +11,7 @@
 ## 1. Prepare the node
 
 ```bash
-# Static IP — reserve it in the Mikrotik DHCP server, or configure netplan.
+# Static IP — reserve it in the router (Ubiquiti) DHCP server, or configure netplan.
 # Longhorn prerequisites:
 sudo apt update && sudo apt install -y open-iscsi nfs-common
 sudo systemctl enable --now iscsid
