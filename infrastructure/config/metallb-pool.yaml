@@ -6,11 +6,9 @@ metadata:
   namespace: metallb-system
 spec:
   addresses:
-    # Traefik VIP on the libvirt LAN (192.168.122.0/24). In use: .1 (gw),
-    # .49, .134 (node1). .200 is free today — keep it OUT of the libvirt
-    # DHCP range (shrink the dnsmasq range on the host if needed) so it is
-    # never leased to another guest.
-    - 192.168.122.200/32
+    # Traefik VIP on the home LAN (192.168.1.0/24). Outside the Ubiquiti DHCP
+    # range. Split-horizon DNS on the router points *.nb3.me service names here.
+    - 192.168.1.100/32
 ---
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
@@ -20,3 +18,11 @@ metadata:
 spec:
   ipAddressPools:
     - lan-pool
+  # Only sowilo sits on the LAN L2; node01 is a libvirt guest behind NAT and
+  # must never answer ARP for the VIP. enp1s0 keeps the announcement off
+  # wg0 and the docker bridges.
+  nodeSelectors:
+    - matchLabels:
+        kubernetes.io/hostname: sowilo
+  interfaces:
+    - enp1s0

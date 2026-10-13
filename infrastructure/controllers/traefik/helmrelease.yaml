@@ -43,8 +43,10 @@ spec:
     service:
       annotations:
         # Stable LAN VIP — split-horizon DNS points *.nb3.me here.
-        # Must stay outside the libvirt DHCP range.
-        metallb.io/loadBalancerIPs: 192.168.122.200
+        # Announced from sowilo only (see infrastructure/config/metallb-pool.yaml).
+        # externalTrafficPolicy stays Cluster: sowilo forwards to any live
+        # Traefik pod, at the cost of SNAT-ing the client IP.
+        metallb.io/loadBalancerIPs: 192.168.1.100
 
     # Redirect entrypoint-wide: every HTTP request goes to HTTPS.
     # Chart 40.x nests redirections under ports.web.http (not ports.web).
