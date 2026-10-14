@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - vmstaticscrape-baremetal.yaml
   - grafana-httproute.yaml
+  - lan-ui-httproutes.yaml
   - vmrule-hardware.yaml
   - vmservicescrape-cert-manager.yaml
   - vmrule-certificates.yaml

@@ -30,6 +30,25 @@ apps:
   Home Assistant:
     href: https://ha.nb3.me
     icon: home-assistant
+  # LAN-only admin UIs (infrastructure/config/*-httproute*.yaml). The names
+  # have no public DNS record, and the Homarr pod resolves *.nb3.me through
+  # public DNS, so `ping` uses the in-cluster Service instead.
+  Longhorn:
+    href: https://longhorn.nb3.me
+    ping: http://longhorn-frontend.longhorn-system.svc.cluster.local
+    icon: longhorn
+  VictoriaMetrics:
+    href: https://vm.nb3.me/vmui/
+    ping: http://vmsingle-vm-stack-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:8428/health
+    icon: victoriametrics
+  vmalert:
+    href: https://vmalert.nb3.me
+    ping: http://vmalert-vm-stack-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:8080/health
+    icon: prometheus
+  Alertmanager:
+    href: https://alertmanager.nb3.me
+    ping: http://vmalertmanager-vm-stack-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:9093/-/healthy
+    icon: alertmanager
   UniFi:
     href: https://192.168.1.1
     icon: ubiquiti-unifi
@@ -87,7 +106,7 @@ boards:
     groups:
       Public: [Navidrome, Immich, Seafile]
       Personal: [Syncthing, Paperless]
-      Auxiliary: [Grafana, Home Assistant]
+      Auxiliary: [Grafana, Home Assistant, Longhorn, VictoriaMetrics, vmalert, Alertmanager]
       Machines: [UniFi, sowilo (LAN), cn62, nuc2, node01]
 
 # Home board for anonymous visitors (global setting) and for the API key's

@@ -1,0 +1,104 @@
+# LAN-only admin UIs (no login of their own). No tunnel entry in nb3_tf;
+# ExternalDNS gives each name a LAN record pointing at the Traefik VIP.
+---
+# VictoriaMetrics single: query UI at /vmui/.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vmui
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: homelab
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - vm.nb3.me
+  rules:
+    # LAN-only guard: a request that came through the Cloudflare tunnel always
+    # carries Cf-Ray. Bounce it to the panel instead of serving an
+    # unauthenticated admin UI, should a tunnel entry ever appear.
+    - matches:
+        - headers:
+            - type: RegularExpression
+              name: Cf-Ray
+              value: ".+"
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            hostname: home.nb3.me
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /
+            statusCode: 302
+    - backendRefs:
+        - name: vmsingle-vm-stack-victoria-metrics-k8s-stack
+          port: 8428
+---
+# vmalert: alert rules and their state.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vmalert
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: homelab
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - vmalert.nb3.me
+  rules:
+    # LAN-only guard: a request that came through the Cloudflare tunnel always
+    # carries Cf-Ray. Bounce it to the panel instead of serving an
+    # unauthenticated admin UI, should a tunnel entry ever appear.
+    - matches:
+        - headers:
+            - type: RegularExpression
+              name: Cf-Ray
+              value: ".+"
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            hostname: home.nb3.me
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /
+            statusCode: 302
+    - backendRefs:
+        - name: vmalert-vm-stack-victoria-metrics-k8s-stack
+          port: 8080
+---
+# Alertmanager: active alerts and silences (headless Service; Traefik uses the EndpointSlice).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: alertmanager
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: homelab
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - alertmanager.nb3.me
+  rules:
+    # LAN-only guard: a request that came through the Cloudflare tunnel always
+    # carries Cf-Ray. Bounce it to the panel instead of serving an
+    # unauthenticated admin UI, should a tunnel entry ever appear.
+    - matches:
+        - headers:
+            - type: RegularExpression
+              name: Cf-Ray
+              value: ".+"
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            hostname: home.nb3.me
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /
+            statusCode: 302
+    - backendRefs:
+        - name: vmalertmanager-vm-stack-victoria-metrics-k8s-stack
+          port: 9093
