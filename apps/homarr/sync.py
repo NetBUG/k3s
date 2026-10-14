@@ -104,7 +104,7 @@ def sync_apps(api, panel):
     return ids
 
 
-def build_content(board_name, board, groups, app_ids):
+def build_content(board_name, board, groups, app_ids, app_specs):
     root = next(s["id"] for s in board["sections"] if s["kind"] == "empty")
     layouts = {l["role"]: l for l in board["layouts"] if l["role"] in TILE}
     sections, items = [{"id": root, "kind": "empty", "xOffset": 0, "yOffset": 0}], []
@@ -130,7 +130,9 @@ def build_content(board_name, board, groups, app_ids):
                                      "xOffset": (i % per_row) * w, "yOffset": i // per_row})
             items.append({"id": stable_id(board_name, "item", title, app), "kind": "app",
                           "options": {"appId": app_ids[app]}, "integrationIds": [],
-                          "advancedOptions": {"title": None, "customCssClasses": [], "borderColor": ""},
+                          # `title` lets two apps (LAN/remote variants) share one tile label.
+                          "advancedOptions": {"title": app_specs[app].get("title"), "customCssClasses": [],
+                                              "borderColor": ""},
                           "layouts": item_layouts})
     return {"sections": sections, "items": items}
 
@@ -155,7 +157,7 @@ def sync_boards(api, panel, app_ids):
                      {"visibility": "public" if spec["public"] else "private"})
         board = api.board(name)
         board_ids[name] = board["id"]
-        content = build_content(name, board, spec["groups"], app_ids)
+        content = build_content(name, board, spec["groups"], app_ids, panel["apps"])
         print(f"board {name}: content {len(content['sections']) - 1} groups, {len(content['items'])} tiles")
         api.call("PUT", f"/api/boards/{board['id']}/content", content)
     return board_ids

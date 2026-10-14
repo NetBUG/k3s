@@ -37,8 +37,16 @@ LAN + поддельный заголовок `wan`, WAN + пустой заго
 | Доска | Доступ | Группы |
 |---|---|---|
 | `public` | публичная; домашняя для анонимов | Public: Navidrome, Immich, Seafile |
-| `remote` | приватная; доска пользователя по умолчанию | Public; Personal: Paperless; Auxiliary: Grafana, Home Assistant, UniFi Cloud |
-| `lan` | приватная; `/` из LAN перенаправляется сюда | Public; Personal: Syncthing, Paperless; Auxiliary: Grafana, Home Assistant, UniFi |
+| `remote` | приватная; доска пользователя по умолчанию | Public; Personal: Paperless; Auxiliary: Grafana, Home Assistant; Machines: UniFi (облако), sowilo, node01 |
+| `lan` | приватная; `/` из LAN перенаправляется сюда | Public; Personal: Syncthing, Paperless; Auxiliary: Grafana, Home Assistant; Machines: UniFi, sowilo, cn62, nuc2, node01 |
+
+Плитки машин — ссылки `ssh://netbug@<хост>` (обработчик ssh на клиенте, например
+Terminal в macOS); индикатор статуса пингует node-exporter на `:9100`, потому что
+без явного `ping` Homarr пингует `ssh://`-ссылку и показывает красный. На `remote`
+используются SSH-имена cloudflared (`sowilo.nb3.me`, `ssh-node.nb3.me`), им нужен
+`ProxyCommand` из `~/.ssh/config`; у cn62 и nuc2 пути из WAN нет. node01 за NAT
+libvirt, поэтому обе доски используют `ssh-node.nb3.me`. Два приложения могут
+делить подпись плитки через `title` (например `sowilo (LAN)` / `sowilo (remote)`).
 
 У Syncthing (`http://192.168.1.125:8384`, Docker на sowilo) и консоли UniFi
 (`https://192.168.1.1`) нет пути из WAN, поэтому они только на `lan`.

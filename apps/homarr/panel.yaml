@@ -36,6 +36,36 @@ apps:
   UniFi Cloud:
     href: ${UNIFI_CLOUD_URL}
     icon: ubiquiti-unifi
+    title: UniFi
+
+  # Machines: ssh:// links (the client's ssh handler, e.g. Terminal on macOS).
+  # `ping` is required — without it Homarr pings the ssh:// href and shows red.
+  # Every host runs node-exporter on :9100, reachable from the Homarr pod.
+  sowilo (LAN):
+    href: ssh://netbug@192.168.1.125
+    ping: http://192.168.1.125:9100/metrics
+    icon: ubuntu-linux
+    title: sowilo
+  sowilo (remote):
+    # cloudflared access ssh — needs the ProxyCommand in ~/.ssh/config.
+    href: ssh://netbug@sowilo.nb3.me
+    ping: http://192.168.1.125:9100/metrics
+    icon: ubuntu-linux
+    title: sowilo
+  cn62:
+    href: ssh://netbug@192.168.1.99
+    ping: http://192.168.1.99:9100/metrics
+    icon: debian-linux
+  nuc2:
+    href: ssh://netbug@192.168.1.26
+    ping: http://192.168.1.26:9100/metrics
+    icon: debian-linux
+  node01:
+    # libvirt guest behind NAT on nuc2: no LAN address, so both boards use
+    # the dedicated cloudflared tunnel.
+    href: ssh://netbug@ssh-node.nb3.me
+    ping: http://192.168.122.135:9100/metrics
+    icon: ubuntu-linux
 
 # Group membership per board. `public` is what anonymous WAN visitors see;
 # `remote` is the logged-in default; `lan` is where LAN devices land
@@ -50,13 +80,15 @@ boards:
     groups:
       Public: [Navidrome, Immich, Seafile]
       Personal: [Paperless]
-      Auxiliary: [Grafana, Home Assistant, UniFi Cloud]
+      Auxiliary: [Grafana, Home Assistant]
+      Machines: [UniFi Cloud, sowilo (remote), node01]
   lan:
     public: false
     groups:
       Public: [Navidrome, Immich, Seafile]
       Personal: [Syncthing, Paperless]
-      Auxiliary: [Grafana, Home Assistant, UniFi]
+      Auxiliary: [Grafana, Home Assistant]
+      Machines: [UniFi, sowilo (LAN), cn62, nuc2, node01]
 
 # Home board for anonymous visitors (global setting) and for the API key's
 # user (the board shown after login over the WAN).

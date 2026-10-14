@@ -36,8 +36,16 @@ are dropped. Boards and apps not named in the file are left alone.
 | Board | Access | Groups |
 |---|---|---|
 | `public` | public; home board for anonymous visitors | Public: Navidrome, Immich, Seafile |
-| `remote` | private; the user's default board | Public; Personal: Paperless; Auxiliary: Grafana, Home Assistant, UniFi Cloud |
-| `lan` | private; LAN `/` redirects here | Public; Personal: Syncthing, Paperless; Auxiliary: Grafana, Home Assistant, UniFi |
+| `remote` | private; the user's default board | Public; Personal: Paperless; Auxiliary: Grafana, Home Assistant; Machines: UniFi (cloud), sowilo, node01 |
+| `lan` | private; LAN `/` redirects here | Public; Personal: Syncthing, Paperless; Auxiliary: Grafana, Home Assistant; Machines: UniFi, sowilo, cn62, nuc2, node01 |
+
+Machine tiles are `ssh://netbug@<host>` links (the client's ssh handler, e.g.
+Terminal on macOS); their status dot pings node-exporter on `:9100`, since
+without an explicit `ping` Homarr pings the `ssh://` href and shows red. `remote`
+uses the cloudflared SSH names (`sowilo.nb3.me`, `ssh-node.nb3.me`), which need
+the `ProxyCommand` from `~/.ssh/config`; cn62 and nuc2 have no WAN path. node01
+is behind libvirt NAT, so both boards use `ssh-node.nb3.me`. Two apps can share
+a tile label via `title` (e.g. `sowilo (LAN)` / `sowilo (remote)`).
 
 Syncthing (`http://192.168.1.125:8384`, Docker on sowilo) and the UniFi
 console (`https://192.168.1.1`) have no WAN route, so they appear only on
