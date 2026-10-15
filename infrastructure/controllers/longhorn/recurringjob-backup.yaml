@@ -1,0 +1,35 @@
+---
+# Daily backup of every volume in the `default` group to the R2 BackupTarget.
+# Longhorn labels each volume without other recurring-job labels with
+# recurring-job-group.longhorn.io/default, so new volumes are covered too.
+# Opted out (cache/metrics, re-creatable): immich-model-cache and vmsingle,
+# moved to the empty `no-backup` group. Their PVCs carry the labels in git
+# (apps/immich/app/pvc.yaml, vmsingle.storageMetadata in the monitoring
+# HelmRelease), but Longhorn 1.12 did not sync them onto the existing volumes,
+# so the Volume CRs were relabelled by hand on 2026-10-14:
+#   kubectl -n longhorn-system label volumes.longhorn.io <vol> \
+#     recurring-job-group.longhorn.io/no-backup=enabled recurring-job-group.longhorn.io/default-
+# Check with: kubectl -n longhorn-system get volumes.longhorn.io --show-labels
+#
+# Backups are block-incremental (2 MiB blocks, lz4). full-backup-interval 6:
+# six incrementals, then a full backup that re-reads and re-checks the whole
+# volume — a weekly full image. 28 retained = 4 weeks.
+# Size at creation (2026-10-14): ~2.9 GiB of data across the 6 volumes, so
+# 4 weeks of history should stay inside R2's 10 GB free tier unless the
+# daily churn exceeds ~200 MiB.
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup-daily
+  namespace: longhorn-system
+spec:
+  task: backup
+  # Longhorn evaluates cron in UTC: 03:00 UTC = 05:00 CEST / 04:00 CET.
+  cron: "0 3 * * *"
+  groups:
+    - default
+  retain: 28
+  concurrency: 2
+  parameters:
+    full-backup-interval: "6"
+  labels: {}

@@ -5,3 +5,4 @@ resources:
   - backup-secret.sops.yaml
   - helmrelease.yaml
   - backuptarget.yaml
+  - recurringjob-backup.yaml

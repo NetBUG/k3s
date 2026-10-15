@@ -27,11 +27,15 @@ spec:
   values:
     persistence:
       defaultClass: true # the cluster's default StorageClass
-      # sowilo joined as agent 2026-06-28 (docs/en/07). Two replicas now: every
-      # new volume gets a copy on each node so an app survives a node failure.
-      defaultClassReplicaCount: 2
+      # One replica since 2026-10-14. Two (one per node, since 2026-06-28) cost
+      # sowilo ~0.7 core of Longhorn CPU, and node01 kept dropping off the LAN
+      # (e1000e hangs on nuc2), so every flap degraded and rebuilt every volume.
+      # A single replica has no redundancy: losing sowilo's disk loses the
+      # volume unless it has a backup. This sets only new volumes; existing
+      # ones are cut to their sowilo replica by hand.
+      defaultClassReplicaCount: 1
     defaultSettings:
-      defaultReplicaCount: 2
+      defaultReplicaCount: 1
       # Don't schedule both replicas on the same node — one per node only.
       replicaSoftAntiAffinity: false
       # NOTE: backup target is NOT set here — in Longhorn 1.12 it lives in the

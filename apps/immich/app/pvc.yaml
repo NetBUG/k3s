@@ -7,6 +7,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: immich-model-cache
   namespace: immich
+  labels:
+    # Re-downloadable models: leave Longhorn's default backup group.
+    recurring-job-source.longhorn.io: enabled
+    recurring-job-group.longhorn.io/no-backup: enabled
 spec:
   accessModes: [ReadWriteOnce]
   resources:

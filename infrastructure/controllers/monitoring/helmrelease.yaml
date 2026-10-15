@@ -42,6 +42,12 @@ spec:
         # query backend needs headroom. Its Longhorn data has a replica here.
         nodeSelector:
           kubernetes.io/hostname: sowilo
+        # 12Gi of metrics is not worth an off-site copy: leave Longhorn's
+        # default backup group (infrastructure/controllers/longhorn/recurringjob-backup.yaml).
+        storageMetadata:
+          labels:
+            recurring-job-source.longhorn.io: enabled
+            recurring-job-group.longhorn.io/no-backup: enabled
         storage:
           accessModes:
             - ReadWriteOnce
@@ -86,6 +92,10 @@ spec:
         # the node01 outage so monitoring/alerting stay up.
         nodeSelector:
           kubernetes.io/hostname: sowilo
+        # Chart default 20s kept vmagent+vmsingle at ~0.6 core on sowilo. Not
+        # higher than 30s: 4 default alert rules use [1m] windows, which need
+        # two samples. The two 82k-sample k3s endpoints scrape at 2m (below).
+        scrapeInterval: 30s
         # Pick up every VMServiceScrape / VMStaticScrape across namespaces
         # (incl. our bare-metal VMStaticScrape in the monitoring ns).
         selectAllByDefault: true
@@ -145,6 +155,30 @@ spec:
         receivers:
           - name: "blackhole"
 
+    # ---- k3s component scrapes ----------------------------------------------
+    # k3s runs every component in one process with one metrics registry, so the
+    # apiserver endpoint and sowilo's kubelet /metrics each return the SAME
+    # ~82.6k samples (apiserver+etcd+scheduler+kubelet), mostly dropped by the
+    # bucket filter above. Rendering and parsing them every 20s cost k3s-server
+    # and vmagent CPU; 2m keeps the counters/gauges at a quarter of the cost.
+    # Endpoint lists replace the chart's, so the whole endpoint is restated.
+    kubeApiServer:
+      vmScrape:
+        spec:
+          endpoints:
+            - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+              port: https
+              scheme: https
+              interval: 2m
+              tlsConfig:
+                caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                serverName: kubernetes
+    kubelet:
+      vmScrapes:
+        kubelet:
+          spec:
+            interval: 2m
+
     # ---- Host & object exporters -------------------------------------------
     prometheus-node-exporter:
       enabled: true
@@ -169,6 +203,27 @@ spec:
     # ---- Dashboards ---------------------------------------------------------
     defaultDashboards:
       enabled: true
+
+    # Grafana's $__rate_interval is 4x the datasource scrape interval (15s if
+    # unset); with 30s samples a 1m window holds one point and rate() is empty.
+    # The list replaces the chart's, so both default datasources are restated.
+    defaultDatasources:
+      victoriametrics:
+        datasources:
+          - name: VictoriaMetrics
+            type: prometheus
+            access: proxy
+            uid: VictoriaMetrics
+            isDefault: true
+            jsonData:
+              timeInterval: 30s
+          - name: VictoriaMetrics (DS)
+            isDefault: false
+            access: proxy
+            uid: VictoriaMetricsDS
+            type: victoriametrics-metrics-datasource
+            jsonData:
+              timeInterval: 30s
 
     # ---- Grafana ------------------------------------------------------------
     grafana:
