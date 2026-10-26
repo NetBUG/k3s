@@ -38,10 +38,13 @@ spec:
     vmsingle:
       spec:
         retentionPeriod: "30d"
-        # Pin to sowilo (15 GiB RAM) — node01 is a flaky 4 GiB guest and the
-        # query backend needs headroom. Its Longhorn data has a replica here.
+        # On node01 since 2026-10-23 to take ~270m CPU and ~740Mi off sowilo
+        # (node01: 2 cores, 7.4 GiB, ~6% busy). Its single Longhorn replica was
+        # moved to node01 with it, so TSDB I/O stays local. Cost: while nuc2
+        # is down, Grafana/vmalert have no backend; vmagent stays on sowilo and
+        # buffers samples until vmsingle is back.
         nodeSelector:
-          kubernetes.io/hostname: sowilo
+          kubernetes.io/hostname: node01
         # 12Gi of metrics is not worth an off-site copy: leave Longhorn's
         # default backup group (infrastructure/controllers/longhorn/recurringjob-backup.yaml).
         storageMetadata:
@@ -125,7 +128,8 @@ spec:
     vmalert:
       enabled: true
       spec:
-        # Pin to sowilo with the rest of the monitoring stack (survives node01 loss).
+        # Pin to sowilo with vmagent/alertmanager. Its queries go to vmsingle on
+        # node01, so no rule evaluates while node01 is down.
         nodeSelector:
           kubernetes.io/hostname: sowilo
         resources:
@@ -228,10 +232,10 @@ spec:
     # ---- Grafana ------------------------------------------------------------
     grafana:
       enabled: true
-      # Pin to sowilo (away from the flaky node01); its Longhorn PVC has a
-      # replica here so it stays put with its data.
+      # On node01 next to vmsingle since 2026-10-23; its single Longhorn
+      # replica was moved there too.
       nodeSelector:
-        kubernetes.io/hostname: sowilo
+        kubernetes.io/hostname: node01
       admin:
         existingSecret: grafana-admin
         userKey: admin-user

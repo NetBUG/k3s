@@ -69,6 +69,15 @@ spec:
               # filesystem watcher (5s debounce) is on by default and catches
               # most changes, this is the belt-and-braces sweep.
               ND_SCANNER_SCHEDULE: "@every 1h"
+              # "Recently added" = age in the collection, which only file
+              # mtimes still carry (2004-2025): every FAT32/NTFS -> ext4 move
+              # reset ctime and birth time. The default sorts by
+              # album.created_at = oldest file *birth* time, i.e. the date of
+              # the last copy; this switches it to album.updated_at = newest
+              # file mtime in the album (0.63.2 persistence/album_repository.go
+              # recentlyAddedSort, model/mediafile.go ToAlbum). The tag
+              # corrector in tgmusicbot keeps mtimes for exactly this reason.
+              ND_RECENTLYADDEDBYMODTIME: "true"
               # Navidrome's own consistent SQLite dump, written inside the
               # Longhorn volume. The DB is the only irreplaceable state here
               # (users, playlists, stars, play counts) and a volume snapshot
