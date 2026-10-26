@@ -232,6 +232,10 @@ spec:
     # ---- Grafana ------------------------------------------------------------
     grafana:
       enabled: true
+      # RWO Longhorn PVC: the chart's RollingUpdate starts the new pod first and
+      # it waits forever on a Multi-Attach error when it lands on another node.
+      deploymentStrategy:
+        type: Recreate
       # On node01 next to vmsingle since 2026-10-23; its single Longhorn
       # replica was moved there too.
       nodeSelector:
