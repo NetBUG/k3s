@@ -1,0 +1,102 @@
+---
+# AskNavidrome: a self-hosted custom Alexa skill that plays the Navidrome
+# library on an Echo ("Alexa, ask Navisonic to play ..."). Alexa posts intents
+# to asknavidrome.nb3.me. The skill answers with Subsonic stream URLs on
+# music.nb3.me, and the Echo fetches the audio from Navidrome directly.
+# See docs/en/12-asknavidrome-alexa.md.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: asknavidrome
+  namespace: asknavidrome
+spec:
+  interval: 1h
+  timeout: 10m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: app-template
+      version: 4.6.2
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  values:
+    defaultPodOptions:
+      securityContext:
+        # The image has no USER and runs as root by default; nothing in it
+        # needs root (no volumes, listens on 5000).
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+      # The skill calls Navidrome through NAVI_URL, which must be the public
+      # https://music.nb3.me because the same base goes into the stream URLs
+      # the Echo fetches. In-cluster that name resolves to Cloudflare, whose
+      # Browser Integrity Check rejects the skill's Python-urllib user agent
+      # with error 1010 (measured 2026-10-26: Python-urllib 403, curl 200).
+      # Pin it to the Traefik VIP instead: it serves music.nb3.me with a
+      # verified certificate and keeps these calls on the LAN.
+      hostAliases:
+        - ip: 192.168.1.100
+          hostnames:
+            - music.nb3.me
+
+    controllers:
+      asknavidrome:
+        # One replica: the play queue lives in the process's memory, so a
+        # second replica would answer Alexa's playback events from a
+        # different queue.
+        replicas: 1
+        containers:
+          app:
+            image:
+              repository: ghcr.io/rosskouk/asknavidrome
+              # v0.10 is the 2026-03-06 release, the same digest as `latest`.
+              tag: v0.10@sha256:63736c0e18019ced988b34437ad76f8df0829a4b137904686027cd38a1a6f63c
+            env:
+              NAVI_URL: https://music.nb3.me
+              NAVI_PORT: "443"
+              NAVI_API_PATH: /rest
+              NAVI_API_VER: "1.16.1"
+              NAVI_USER: alexa
+              # Minimum tracks queued for a genre/artist request.
+              NAVI_SONG_COUNT: "50"
+              # 0-3. Level 2 logs every Alexa request and response, and level 3
+              # serves /queue, /history and /buffer publicly. Keep it at 1 once
+              # the skill works.
+              NAVI_DEBUG: "1"
+              TZ: Europe/Moscow
+            envFrom:
+              # NAVI_PASS + NAVI_SKILL_ID
+              - secretRef:
+                  name: asknavidrome
+            probes:
+              # The only route is POST /, so GET answers 405; check the socket.
+              liveness:
+                enabled: true
+                type: TCP
+              readiness:
+                enabled: true
+                type: TCP
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: [ALL]
+
+    service:
+      app:
+        controller: asknavidrome
+        ports:
+          http:
+            port: 5000

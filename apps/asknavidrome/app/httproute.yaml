@@ -1,0 +1,22 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: asknavidrome
+  namespace: asknavidrome
+spec:
+  parentRefs:
+    - name: homelab
+      namespace: traefik
+      sectionName: websecure
+  # The Alexa skill endpoint (Developer Console -> Endpoint -> HTTPS, "My
+  # development endpoint has a certificate from a trusted certificate
+  # authority"). The Cloudflare CNAME + tunnel ingress rule live in nb3_tf
+  # (k8s_services.asknavidrome). Requests are signed by Amazon and checked by
+  # ask-sdk against NAVI_SKILL_ID, so the public route needs no Access gate.
+  hostnames:
+    - asknavidrome.nb3.me
+  rules:
+    - backendRefs:
+        - name: asknavidrome
+          port: 5000
