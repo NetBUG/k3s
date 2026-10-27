@@ -17,11 +17,13 @@ spec:
       labels:
         app: cloudflared
     spec:
-      # Spread replicas across nodes when there is more than one.
+      # One replica per node. ScheduleAnyway put both on one node (sowilo until
+      # 2026-10-27, then node01 after the 2026.10.5 rollout). With a node down
+      # its replica stays Pending; the other keeps serving.
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
+          whenUnsatisfiable: DoNotSchedule
           labelSelector:
             matchLabels:
               app: cloudflared
