@@ -27,7 +27,7 @@ spec:
               app: cloudflared
       containers:
         - name: cloudflared
-          image: cloudflare/cloudflared:2026.5.2
+          image: cloudflare/cloudflared:2026.10.5@sha256:1b1d34d0a9c0bfca9de72db8460d328db3f19edd2b96169114e3e893a97bbe53
           args:
             - tunnel
             - --no-autoupdate
@@ -48,6 +48,13 @@ spec:
               port: 2000
             initialDelaySeconds: 10
             periodSeconds: 30
+          # /ready turns 200 once an edge connection is registered; without it a
+          # rollout marks the new pod Ready at start and kills the old one early.
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 2000
+            periodSeconds: 5
           resources:
             requests:
               cpu: 10m
