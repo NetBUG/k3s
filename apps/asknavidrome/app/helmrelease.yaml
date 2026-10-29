@@ -71,6 +71,9 @@ spec:
               # the skill works.
               NAVI_DEBUG: "1"
               TZ: Europe/Moscow
+              # Loads sitecustomize.py from the mounted ConfigMap at
+              # interpreter startup; see sitecustomize.yaml.
+              PYTHONPATH: /etc/asknavidrome-patch
             envFrom:
               # NAVI_PASS + NAVI_SKILL_ID
               - secretRef:
@@ -93,6 +96,13 @@ spec:
               allowPrivilegeEscalation: false
               capabilities:
                 drop: [ALL]
+
+    persistence:
+      sitecustomize:
+        type: configMap
+        name: asknavidrome-sitecustomize
+        globalMounts:
+          - path: /etc/asknavidrome-patch
 
     service:
       app:

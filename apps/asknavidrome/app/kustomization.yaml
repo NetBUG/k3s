@@ -3,5 +3,6 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - secret.sops.yaml # from secret.sops.yaml.example
+  - sitecustomize.yaml
   - helmrelease.yaml
   - httproute.yaml

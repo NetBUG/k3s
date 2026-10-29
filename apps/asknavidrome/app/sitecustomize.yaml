@@ -1,0 +1,29 @@
+---
+# Python imports `sitecustomize` at interpreter startup from anything on
+# sys.path, and PYTHONPATH lands on sys.path first, so this patches the shipped
+# image without rebuilding it (verified in-pod: patched verify() returns None,
+# unpatched it raises VerificationException).
+#
+# Alexa signs its HTTPS requests, but Lambda invocations carry no Signature or
+# SignatureCertChainUrl headers, so RequestVerifier rejects every forwarded
+# request with 400. Only that verifier is neutralised; TimestampVerifier
+# (replay protection) and the NAVI_SKILL_ID check still run, and the skill ID
+# is what keeps the public endpoint honest.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: asknavidrome-sitecustomize
+  namespace: asknavidrome
+data:
+  sitecustomize.py: |
+    import sys
+
+    try:
+        from ask_sdk_webservice_support import verifier
+    except Exception as exc:
+        print(f'[sitecustomize] ask_sdk_webservice_support missing: {exc!r}',
+              file=sys.stderr)
+    else:
+        verifier.RequestVerifier.verify = lambda *args, **kwargs: None
+        print('[sitecustomize] RequestVerifier.verify neutralised for Lambda delivery',
+              file=sys.stderr)
