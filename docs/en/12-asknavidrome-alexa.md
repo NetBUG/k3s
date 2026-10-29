@@ -132,3 +132,92 @@ the skill returned, but plays no audio.
 `NAVI_DEBUG: "2"` logs every request and response. Level 3 also serves
 `/queue`, `/history` and `/buffer` on the public hostname, so use it only
 briefly.
+
+## Phrases that actually work
+
+The grammar is fixed by `alexa.json` — Alexa matches these shapes and little
+else. Patterns below are the literal sample utterances; everything in `{}` is a
+slot.
+
+Say the invocation name as **two words**: "Navi Sonic". It is frequently heard
+as "never sonic" — see *Making it less painful* below.
+
+### Two-step is far more reliable than one-shot
+
+One-shot ("Alexa, ask Navi Sonic to play songs by Rammstein") competes with
+Alexa's built-in music and often loses — Amazon Music answers instead, with
+"I can't find songs by …" (note: AskNavidrome never says that; its misses all
+end in "in the collection", which is how you tell who replied).
+
+Inside an open session there is no competition:
+
+```
+"Alexa, open Navi Sonic"      -> "Ready!"
+"play songs by Rammstein"
+```
+
+### By artist — `play songs by {artist}` / `play music by {artist}`
+
+There is **no** bare "play {artist}". Working examples:
+
+- *play songs by Rammstein*
+- *play music by Dragonland*
+- *play songs by Accept*
+- *play music by The Rasmus*
+
+### A named song — `play {song} by {artist}`
+
+- *play Du Hast by Rammstein*
+- *play Amerika by Rammstein*
+- *play Breaker by Accept*
+- *play Astronomy by Dragonland*
+
+Variants: `play the song {song} by the band {artist}`, `… by the artist {artist}`.
+
+### An album — `play the album {album}` / `play the album {album} by {artist}`
+
+- *play the album Mutter*
+- *play the album Rosenrot by Rammstein*
+- *play the album Dead Letters by The Rasmus*
+- *play the album Holy War by Dragonland*
+- *play the album Death Row by Accept*
+
+### By genre — `play {genre} songs` / `play {genre} music`
+
+Tagged genres in this library: Heavy Metal, Power Metal, Industrial Metal,
+Gothic Rock, Metal, Industrial, Pop, Rap, Dance, Hip-Hop.
+
+- *play heavy metal music*
+- *play power metal songs*
+
+### No slots at all
+
+- *play random music* · *play a mix of songs*
+- *play my favourite songs* · *play starred tracks*
+- *shuffle* · *randomise the queue*
+- *what's playing* · *who sings this* · *which album is this song from*
+- *like this song* · *star this song* · *unstar this song*
+
+### What will not work here
+
+- **Playlists.** `play the {playlist} playlist` is supported by the skill, but
+  this library's playlists are imported m3u stubs named `list`, `album`,
+  `play` and similar, nearly all with 0 songs. Useless until real playlists exist.
+- **Cyrillic artists** (БИ-2, Дискотека Авария, Ляпис Трубецкой, Порнофильмы,
+  Сурганова) on an English-locale device: English ASR will not produce those
+  names. Many are also stored mojibaked (`ÄÈÑÊÎÒÅÊÀ ÀÂÀÐÈß`), so even typed
+  matching fails. Fixing the tags is a prerequisite.
+- **Albums tagged `[Unknown Album]`** — a large share of the library, including
+  most Rammstein singles. Album commands only work for the properly tagged ones
+  listed above.
+
+## Making it less painful
+
+- **Rename the invocation name.** This is the single biggest win and costs one
+  build: Build → Invocations → Skill Invocation Name, then Build Model. Pick
+  something phonetically distinct that English ASR nails — "navi sonic" shares
+  its shape with "never sonic". Candidates: *my jukebox*, *music vault*,
+  *home jukebox*, *record shelf*.
+- **Prefer the two-step** open-then-command form over one-shot.
+- **Fix the tags** (album names, Cyrillic encoding) — more of the grammar
+  becomes usable as metadata improves, with no skill changes at all.

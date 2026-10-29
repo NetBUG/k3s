@@ -3,6 +3,17 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - secret.sops.yaml # from secret.sops.yaml.example
-  - sitecustomize.yaml
   - helmrelease.yaml
   - httproute.yaml
+
+# sitecustomize.py is real, lintable source in skill/ rather than a YAML blob.
+# No name-suffix hash: the HelmRelease references this ConfigMap by a fixed
+# name. That means edits do NOT roll the pod — see skill/README.md.
+configMapGenerator:
+  - name: asknavidrome-sitecustomize
+    namespace: asknavidrome
+    files:
+      - skill/sitecustomize.py
+
+generatorOptions:
+  disableNameSuffixHash: true
