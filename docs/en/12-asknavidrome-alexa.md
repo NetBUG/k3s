@@ -1,6 +1,6 @@
 # 12 — AskNavidrome: the Navidrome library on Alexa
 
-> Result: "Alexa, ask Navi Sonic to play <artist / album / playlist / genre>"
+> Result: "Alexa, ask my jukebox to play <artist / album / playlist / genre>"
 > plays music from Navidrome on an Echo. The skill stays in development mode
 > on our own Amazon account, so it is never certified or published.
 
@@ -125,8 +125,7 @@ A good start logs `AskNavidrome Web Service is ready to start!` and **no**
 service and passes the TCP probes. Only that log line shows it.
 
 In the Developer Console, the **Test** tab (set to *Development*) accepts
-typed utterances such as `ask navi sonic to play <artist>` — the invocation
-name is two words. It shows the JSON
+typed utterances such as `ask my jukebox to play music by <artist>`. It shows the JSON
 the skill returned, but plays no audio.
 
 `NAVI_DEBUG: "2"` logs every request and response. Level 3 also serves
@@ -139,12 +138,12 @@ The grammar is fixed by `alexa.json` — Alexa matches these shapes and little
 else. Patterns below are the literal sample utterances; everything in `{}` is a
 slot.
 
-Say the invocation name as **two words**: "Navi Sonic". It is frequently heard
-as "never sonic" — see *Making it less painful* below.
+The invocation name is **`my jukebox`** (renamed from "navi sonic" on
+2026-10-29, which English ASR persistently heard as "never sonic").
 
 ### Two-step is far more reliable than one-shot
 
-One-shot ("Alexa, ask Navi Sonic to play songs by Rammstein") competes with
+One-shot ("Alexa, ask my jukebox to play songs by Rammstein") competes with
 Alexa's built-in music and often loses — Amazon Music answers instead, with
 "I can't find songs by …" (note: AskNavidrome never says that; its misses all
 end in "in the collection", which is how you tell who replied).
@@ -152,7 +151,7 @@ end in "in the collection", which is how you tell who replied).
 Inside an open session there is no competition:
 
 ```
-"Alexa, open Navi Sonic"      -> "Ready!"
+"Alexa, open my jukebox"      -> "Ready!"
 "play songs by Rammstein"
 ```
 
@@ -213,11 +212,13 @@ Gothic Rock, Metal, Industrial, Pop, Rap, Dance, Hip-Hop.
 
 ## Making it less painful
 
-- **Rename the invocation name.** This is the single biggest win and costs one
-  build: Build → Invocations → Skill Invocation Name, then Build Model. Pick
-  something phonetically distinct that English ASR nails — "navi sonic" shares
-  its shape with "never sonic". Candidates: *my jukebox*, *music vault*,
-  *home jukebox*, *record shelf*.
+- **The invocation name was already renamed** to `my jukebox` (2026-10-29).
+  "navi sonic" shares its phonetic shape with "never sonic", and "navi" is not
+  an English word so ASR had no prior for it. "jukebox" is phonetically
+  distinct, collides with no built-in command, and is also a German loanword —
+  which matters on a bilingual account. Changing it again is one build:
+  Build → Invocations → Skill Invocation Name, then Build Model. Avoid names
+  containing "music", which overlaps Alexa's built-in music commands.
 - **Prefer the two-step** open-then-command form over one-shot.
 - **Fix the tags** (album names, Cyrillic encoding) — more of the grammar
   becomes usable as metadata improves, with no skill changes at all.
