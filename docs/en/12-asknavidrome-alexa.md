@@ -1,14 +1,26 @@
 # 12 — AskNavidrome: the Navidrome library on Alexa
 
-> Result: "Alexa, ask Navisonic to play <artist / album / playlist / genre>"
+> Result: "Alexa, ask Navi Sonic to play <artist / album / playlist / genre>"
 > plays music from Navidrome on an Echo. The skill stays in development mode
 > on our own Amazon account, so it is never certified or published.
 
 ## How a request flows
 
-1. The Echo sends the intent to Amazon. Amazon posts it, signed, to
+1. The Echo sends the intent to Amazon. Amazon invokes the **Lambda**
+   function `navisonic-forwarder` (eu-west-1), which POSTs the event to
    `https://asknavidrome.nb3.me/`. That goes through the Cloudflare tunnel and
    Traefik to the `asknavidrome` pod (`apps/asknavidrome/`).
+
+   Amazon does **not** post to the HTTPS endpoint directly. It builds the
+   request and retries it, but never puts it on the network — measured across
+   two hostnames, two skills and three detectors on 2026-10-29. Lambda travels
+   a different Amazon path and works. See `apps/asknavidrome/lambda/` and
+   `runs/20261028-2117-navisonic-unable-to-reach-skill.md`.
+
+   Because Lambda invocations carry no `Signature` headers, the pod runs with
+   `RequestVerifier` neutralised (`apps/asknavidrome/app/sitecustomize.yaml`).
+   The skill ID in `NAVI_SKILL_ID` is therefore the only secret protecting the
+   public endpoint.
 2. The skill searches Navidrome through the Subsonic API as the non-admin user
    `alexa`, then answers with a queue of stream URLs:
    `https://music.nb3.me:443/rest/stream.view?...&u=alexa&s=<salt>&t=md5(password+salt)&id=<id>`.
@@ -23,8 +35,9 @@ forgets the current queue.
 The skill's API calls go to `NAVI_URL`, which must be the public URL because
 the same base goes into the stream URLs. In-cluster, `music.nb3.me` resolves to
 Cloudflare. Cloudflare's Browser Integrity Check answers the `Python-urllib`
-user agent with **403, error 1010**, while curl gets 200 (measured
-2026-10-26). The HelmRelease therefore pins `music.nb3.me` to the Traefik VIP
+user agent with **403, error 1010**, while curl gets 200 (measured 2026-10-26,
+and again on 2026-10-29 — it also bit the Lambda forwarder, which now sends an
+explicit `User-Agent`; anything but the urllib default passes). The HelmRelease therefore pins `music.nb3.me` to the Traefik VIP
 `192.168.1.100` via `hostAliases`. Traefik serves that name with a verified
 certificate, so the calls stay on the LAN.
 
@@ -58,9 +71,10 @@ In the [Alexa Developer Console](https://developer.amazon.com/alexa/console/ask)
    [`alexa.json`](https://github.com/rosskouk/asknavidrome/blob/main/alexa.json)
    and build the model.
 3. **Interfaces**: enable **Audio Player**.
-4. **Endpoint → HTTPS**: `https://asknavidrome.nb3.me/`. For the certificate,
-   choose "My development endpoint has a certificate from a trusted
-   certificate authority".
+4. **Endpoint → AWS Lambda ARN**: the ARN of `navisonic-forwarder`. Set the
+   function up first — `apps/asknavidrome/lambda/README.md` has the steps.
+   (The **HTTPS** option is the obvious choice and does not work; Amazon never
+   delivers to it. That is what the Lambda exists to work around.)
 5. Copy the skill ID (`amzn1.ask.skill.…`) from the endpoint page.
 
 ### 3. Secret
@@ -111,7 +125,8 @@ A good start logs `AskNavidrome Web Service is ready to start!` and **no**
 service and passes the TCP probes. Only that log line shows it.
 
 In the Developer Console, the **Test** tab (set to *Development*) accepts
-typed utterances such as `ask navisonic to play <artist>`. It shows the JSON
+typed utterances such as `ask navi sonic to play <artist>` — the invocation
+name is two words. It shows the JSON
 the skill returned, but plays no audio.
 
 `NAVI_DEBUG: "2"` logs every request and response. Level 3 also serves

@@ -70,7 +70,14 @@ spec:
               # serves /queue, /history and /buffer publicly. Keep it at 1 once
               # the skill works.
               NAVI_DEBUG: "1"
-              TZ: Europe/Moscow
+              # This image is Alpine with no tzdata, so musl silently
+              # ignores IANA names like Europe/Moscow and logs UTC
+              # (measured 2026-10-29). musl does parse POSIX TZ
+              # strings, where the offset sign is inverted, so -3 is
+              # UTC+3; Moscow has had no DST since 2014, so a fixed
+              # offset stays correct. navidrome and homarr have the
+              # same inert setting and are left as they are.
+              TZ: MSK-3
               # Loads sitecustomize.py from the mounted ConfigMap at
               # interpreter startup; see sitecustomize.yaml.
               PYTHONPATH: /etc/asknavidrome-patch

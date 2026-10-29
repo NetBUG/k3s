@@ -31,6 +31,11 @@ def lambda_handler(event, context):
         headers={
             "Content-Type": "application/json; charset=utf-8",
             "Accept": "application/json",
+            # urllib's default agent is Python-urllib/3.x, which Cloudflare's
+            # Browser Integrity Check answers with 403 error 1010 — the same
+            # trap docs/en/12-asknavidrome-alexa.md records for the skill's
+            # own Subsonic calls. Anything else passes.
+            "User-Agent": "navisonic-forwarder/1.0",
         },
     )
 

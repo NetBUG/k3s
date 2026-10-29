@@ -133,6 +133,26 @@ Source was transferred base64-encoded and verified by sha256 against the local
 Remaining, in order: land the cluster patch (step 1 above), then switch the
 skill endpoint from HTTPS to the Lambda ARN (step 5), then verify (step 6).
 
+## Gotcha that bit us: Cloudflare error 1010
+
+The first deploy failed with the skill saying *"There was a problem with the
+requested skill's response"*. CloudWatch had the real reason:
+
+```
+[ERROR] RuntimeError: AskNavidrome returned 403: Error 1010: Access denied
+  "The site owner has blocked access based on your browser's signature"
+```
+
+`urllib` sends `User-Agent: Python-urllib/3.x`, and Cloudflare's Browser
+Integrity Check rejects exactly that — the same trap
+`docs/en/12-asknavidrome-alexa.md` already records for the skill's own Subsonic
+calls, which is why the pod pins `music.nb3.me` to the Traefik VIP. The
+forwarder therefore sets an explicit `User-Agent`. Any value but the urllib
+default passes; measured 2026-10-29.
+
+If this endpoint ever moves behind Cloudflare again under a different name,
+check the agent first.
+
 ## Tidy-up
 
 - Delete the **Navisonic Test** skill; its endpoint is still pointed at
