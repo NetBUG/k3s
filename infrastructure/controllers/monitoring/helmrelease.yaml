@@ -128,10 +128,10 @@ spec:
     vmalert:
       enabled: true
       spec:
-        # Pin to sowilo with vmagent/alertmanager. Its queries go to vmsingle on
-        # node01, so no rule evaluates while node01 is down.
+        # On node01 next to vmsingle since 2026-11-02: it cannot evaluate rules
+        # without vmsingle anyway, so sowilo gained nothing from hosting it.
         nodeSelector:
-          kubernetes.io/hostname: sowilo
+          kubernetes.io/hostname: node01
         resources:
           requests:
             cpu: 25m
@@ -141,9 +141,10 @@ spec:
     alertmanager:
       enabled: true
       spec:
-        # Pin to sowilo so alerting fires even when node01 is down.
+        # On node01 with vmalert since 2026-11-02: alerts only come from vmalert,
+        # which needs vmsingle, so nothing fires while node01 is down regardless.
         nodeSelector:
-          kubernetes.io/hostname: sowilo
+          kubernetes.io/hostname: node01
         resources:
           requests:
             cpu: 25m
@@ -197,6 +198,10 @@ spec:
           memory: 64Mi
     kube-state-metrics:
       enabled: true
+      # Off sowilo since 2026-11-02. Object state is not buffered across a
+      # node01 outage (vmagent on sowilo still buffers its other scrapes).
+      nodeSelector:
+        kubernetes.io/hostname: node01
       resources:
         requests:
           cpu: 25m

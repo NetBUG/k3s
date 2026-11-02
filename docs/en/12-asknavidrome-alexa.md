@@ -222,3 +222,55 @@ Gothic Rock, Metal, Industrial, Pop, Rap, Dance, Hip-Hop.
 - **Prefer the two-step** open-then-command form over one-shot.
 - **Fix the tags** (album names, Cyrillic encoding) — more of the grammar
   becomes usable as metadata improves, with no skill changes at all.
+
+## Gotchas found in daily use
+
+### "open my jukebox" seems to exit immediately
+
+It does not exit — the session is open, you just have a few seconds. The launch
+handler is `speak('Ready!').ask('Ready!')`, which keeps the session alive, but
+Alexa closes any open session after roughly 8 seconds of silence. Observed on
+the device: launch at 21:43:55, session ended 21:44:02 — seven seconds.
+
+Say the next command promptly after "Ready!", or use the one-shot form and
+accept that it sometimes loses to built-in music.
+
+### "play next" does nothing — say "next" or "skip"
+
+Skipping *is* implemented (`NextPlaybackHandler`, which also answers
+`PlaybackController.NextCommandIssued`, so the next button in the Alexa app and
+on the device works too). The problem is the phrase: it maps to
+`AMAZON.NextIntent`, whose built-in utterances are **"next"**, **"skip"**,
+"next song" — *not* "play next".
+
+Two further conditions:
+
+- There must be **something playing** — next/previous operate on the queue.
+- While audio is playing you do **not** repeat the invocation name. Just
+  "Alexa, next".
+
+Built-in controls wired up in the skill: `next`, `previous`, `pause`, `resume`,
+`stop`, `cancel`, `help`.
+
+### Asking for a specific song: the artist is mandatory
+
+Every sample for the song intent requires **both** slots:
+
+```
+Play {song} by {artist}
+Play the song {song} by {artist}            (also "by the band" / "by the artist")
+```
+
+There is **no** song-only form — "play Du Hast" will not reach this intent. You
+must say:
+
+> *play Du Hast by Rammstein*
+
+This is also the exact cause of the crash recorded in
+`runs/20261028-2117-navisonic-unable-to-reach-skill.md`: an utterance matched
+this intent with `song` empty, and upstream dereferenced the missing slot. A
+guard now answers with guidance instead of failing, but the grammar still
+requires the artist.
+
+To play a song whose artist you cannot recall, use the album or artist forms
+and skip to it with "next".
